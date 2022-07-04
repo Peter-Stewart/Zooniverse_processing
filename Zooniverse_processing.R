@@ -330,7 +330,26 @@ impala4 <- impala3 %>% pivot_wider(names_from = visit, values_from = n)
 
 impala5 <- impala4 %>% select(order(colnames(impala4)))
 
-  
+dd <- matrix(NA, nrow = sum(sitedays$Days), ncol=nrow(hours))
+ff <- sitedays %>% uncount(Days)
+ff$Site <- ifelse(ff$Site < 10, paste0("0", ff$Site), ff$Site)
+ff$Site <- paste0("Site_",ff$Site)
+gg <- rep(NA, nrow(ff))
+gg[1] <- 1
+ff <- cbind(ff,gg)
+for(i in 2:nrow(ff)){
+  if(ff$Site[i]==ff$Site[i-1])
+     ff$gg[i] <-  ff$gg[i-1] + 1L 
+  else
+     ff$gg[i] <- 1L
+}
+ff$site_day <- paste0(ff$Site,"_",ff$gg)
+
+impala6 <- merge(ff, impala5, by="site_day", all.x = TRUE)
+impala7 <- impala6 %>% select(-site, -day, -gg)
+
+
+
 # should be zero if surveyed but not seen, NA if not surveyed - so need to check how many days each camera was deployed for
 # all columns should be zero, but some rows may be entirely NA - since in current format all hours are surveyed, but not all days
 # can then just remove empty days? (days which are all NA)
