@@ -305,8 +305,15 @@ consensus_classifications <- consensus_classifications %>% select(
 
 # Generate detection matrix for each species (number of detections per hour, can binarise if needed) ####
 # Hours and days for all sites - will need these so that hours/days with no detections can be kept as zero
+setwd("C:/temp/Zooniverse/June22")
+startends <- read.csv("Fieldseason1_startends.csv")
+startends$Deployed <- as_datetime(paste(startends$Deploy_time_24hr, startends$Deploy_date))
+startends$Days <- as.integer(startends$Days)
+
+
+
 hours <- as.data.frame(0:23); colnames(hours) <- "hr"
-sitedays <- 
+sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 
 # Each row is one day at a site
 
