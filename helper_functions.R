@@ -3,6 +3,12 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
   # Subset to the correct species
   df <- consensus_classifications %>% filter(species==sp)
   
+  # Warn and return NA if species was never observed 
+  if(nrow(df)==0){
+    warning(paste(sp, "was never observed"))
+    return(NA)
+  }
+  
   # Add indicator for use later
   df$indicator <- 1L
   
