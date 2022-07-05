@@ -113,16 +113,16 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
     coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE)
   }
   
-  # If rescale is true, rescale using same SD for both lat and long to avoid warping distances
+  # If rescale is true, rescale using max lat for both lat and long to avoid warping distances
   if(center == FALSE & rescale == TRUE){
-    coords$GPS_long <- scale(coords$GPS_long, center = FALSE, scale = FALSE) / sd(coords$GPS_long)
-    coords$GPS_lat <- scale(coords$GPS_lat, center = FALSE, scale = FALSE) / sd(coords$GPS_long)
+    coords$GPS_long <- scale(coords$GPS_long, center = FALSE, scale = FALSE) / max(coords$GPS_lat) *10
+    coords$GPS_lat <- scale(coords$GPS_lat, center = FALSE, scale = FALSE) / max(coords$GPS_lat) *10
   }
   
-  # If center and rescale are  true, center to zero and rescale using same SD for both lat and long to avoid warping distances
+  # If center and rescale are  true, center to zero and rescale using max lat for both lat and long to avoid warping distances
   if(center == TRUE & rescale == TRUE){
-    coords$GPS_long <- scale(coords$GPS_long, scale = FALSE) / sd(coords$GPS_long)
-    coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE) / sd(coords$GPS_long)
+    coords$GPS_long <- scale(coords$GPS_long, scale = FALSE) / max(coords$GPS_lat) *10
+    coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE) / max(coords$GPS_lat) *10
   }
 
   # Calculate distance matrix
@@ -131,3 +131,4 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
   
   return(dmat)
 }
+
