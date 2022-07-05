@@ -70,7 +70,7 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
 
 
 # Generates distance matrix from columns that contain "lat" or "long"
-generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_as_days = FALSE){
+generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_as_days = FALSE, squared = FALSE){
   
   # Select columns which contain "long" or "lat" in their name
   coords <- df %>% select(contains("long") | contains("lat"))
@@ -129,6 +129,11 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
   dmat <- dist(coords, diag=T, upper=T)
   dmat <- as.matrix(dmat)
   
-  return(dmat)
+  if(squared == TRUE){
+    dmat2 <- dmat^2
+    return(dmat2)
+  }
+  else{
+    return(dmat)
+  } 
 }
-
