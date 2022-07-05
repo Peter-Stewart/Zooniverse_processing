@@ -1,5 +1,23 @@
 # Generates detection matrix where the rows are site-days and the columns are hours
 generate_detection_matrix_hours <- function(sp, binary = FALSE){
+  
+  # Check if consensus classifications dataframe exists, stop and warn if not
+  if(!exists("consensus_classifications")){
+    stop("Please load the consensus_classifications dataframe")
+  }
+  
+  # Check if sitedays dataframe exists, stop and warn if not
+  if(!exists("sitedays")){
+    stop("Please load the sitedays dataframe")
+  }
+  
+  # Check if hours dataframe exists, create if not
+  if(!exists("hrs")){
+    warning("hours dataframe does not exist, creating temporary version")
+    hrs <- as.data.frame(0:23) 
+    colnames(hrs) <- "hr"
+  }
+  
   # Subset to the correct species
   df <- consensus_classifications %>% filter(species==sp)
   
