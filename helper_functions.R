@@ -67,3 +67,35 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
   
   return(df)
 }
+
+
+# Generates distance matrix from columns that contain "lat" or "long"
+generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE){
+  
+  # Select columns which contain "long" or "lat" in their name
+  coords <- df %>% select(contains("long") | contains("lat"))
+  
+  # If center is true, center around zero
+  if(center == TRUE & rescale == FALSE){
+    coords$GPS_long <- scale(coords$GPS_long, scale = FALSE)
+    coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE)
+  }
+  
+  # If rescale is true, rescale using same SD for both lat and long to avoid warping distances
+  if(center == FALSE & rescale == TRUE){
+    coords$GPS_long <- scale(coords$GPS_long, center = FALSE, scale = FALSE) / sd(coords$GPS_long)
+    coords$GPS_lat <- scale(coords$GPS_lat, center = FALSE, scale = FALSE) / sd(coords$GPS_long)
+  }
+  
+  # If center and rescale are  true, center to zero and rescale using same SD for both lat and long to avoid warping distances
+  if(center == TRUE & rescale == TRUE){
+    coords$GPS_long <- scale(coords$GPS_long, scale = FALSE) / sd(coords$GPS_long)
+    coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE) / sd(coords$GPS_long)
+  }
+
+  # Calculate distance matrix
+  dmat <- dist(coords, diag=T, upper=T)
+  dmat <- as.matrix(dmat)
+  
+  return(dmat)
+}
