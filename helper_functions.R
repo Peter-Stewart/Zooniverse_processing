@@ -139,7 +139,7 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
 }
 
 # Expands a dataframe so that sites are sitedays
-expand_to_sitedays <- function(df, remove_sitedays_column = FALSE){
+expand_to_sitedays <- function(df, remove_sitedays_column = FALSE, rownames = FALSE){
   # Stop and warn if no sitedays dataframe
   if(!exists("sitedays")){
     stop("Please load the sitedays dataframe")
@@ -165,8 +165,12 @@ expand_to_sitedays <- function(df, remove_sitedays_column = FALSE){
   }
   ff$site_day <- paste0(ff$Site,"_",ff$gg)
   df <- ff %>% select(-Site, -gg)
-  rownames(df) <- df$site_day
   
+  # Optionally change rownames to sitedays (default is FALSE)
+  if(rownames == TRUE){
+    rownames(df) <- df$site_day
+  }
+
   # Optionally remove the sitedays column (default is FALSE)
   if(remove_sitedays_column == TRUE){
     df <- df %>% select(-site_day)
