@@ -54,3 +54,16 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
     coords$GPS_long <- scale(coords$GPS_long, scale = FALSE) / max(coords$GPS_lat) *10
     coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE) / max(coords$GPS_lat) *10
   }
+
+  # Calculate distance matrix
+  dmat <- dist(coords, diag=T, upper=T)
+  dmat <- as.matrix(dmat)
+  
+  if(squared == TRUE){
+    dmat2 <- dmat^2
+    return(dmat2)
+  }
+  else{
+    return(dmat)
+  } 
+}
