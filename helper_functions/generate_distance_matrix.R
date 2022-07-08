@@ -1,6 +1,6 @@
 # Generates distance matrix from dataframe with columns that contain "lat" or "long"
 
-generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_as_days = FALSE, squared = FALSE){
+generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_as_days = FALSE, jitter = TRUE, log = FALSE, logbase = 15, squared = FALSE){
   
   # Select columns which contain "long" or "lat" in their name
   coords <- df %>% select(contains("long") | contains("lat"))
@@ -54,11 +54,30 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
     coords$GPS_long <- scale(coords$GPS_long, scale = FALSE) / max(coords$GPS_lat) *10
     coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE) / max(coords$GPS_lat) *10
   }
-
+  
+  coords <- coords %>% select(GPS_long, GPS_lat)
+  colnames(coords) <- c("x", "y")
+  
+  attr(coords$x, "scaled:center") <- NULL
+  attr(coords$y, "scaled:center") <- NULL
+  
   # Calculate distance matrix
   dmat <- dist(coords, diag=T, upper=T)
   dmat <- as.matrix(dmat)
   
+  # Optionally add jitter to off-diagonal zeros to prevent numerical underflow
+  if(jitter == TRUE){
+    warning("Adding jitter to off-diagonal zeros to prevent numerical underflow in Gaussian Process. Set jitter = FALSE to disable.")
+    dmat <- ifelse(dmat==0, dmat+1.001, dmat)
+    diag(dmat) <- 0
+  }
+  
+  # Optionally log-transform
+  if(log == TRUE){
+    dmat <- ifelse(dmat > 0, log(dmat, base = logbase), dmat)
+  }
+  
+  # Optionally return squared distances
   if(squared == TRUE){
     dmat2 <- dmat^2
     return(dmat2)
