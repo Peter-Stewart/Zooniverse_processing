@@ -10,6 +10,12 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
     stop("Please load the startends dataframe")
   }
   
+  # Create sitedays dataframe if it doesn't already exist
+  if(!exists("sitedays")){
+    warning("sitedays not found - creating from startends")
+    sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
+  }
+  
   # Subset to the correct species
   df <- consensus_classifications %>% filter(species==sp)
   
@@ -78,14 +84,21 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
       col_list[[i]] <- temp
       }
     }
-  col_list2 <- col_list %>% compac
-  col_df <- do.call(rbind, col_list)
+  col_df <- do.call(cbind, col_list)
+  df <- cbind(df, col_df)
+  df <- df %>% select(order(colnames(df))) # Re-order columns
   
   # Make each visit value observed if any observed, 0 if visited but unobserved, NA if not visited
-  df[is.na(df)] <- 0 # Make every NA zero
+  df[is.na(df)] <- 0 # First make every NA zero
   
-  
-  # Fill from right with NA for k_max - k[i] cells
-  
+  # Then fill from right with NA for k_max - k[i] cells
+  for(i in 1:nrow(df)){
+    for(k in 1:max(sites_k$k) + 1L){
+      if(k <= sites_k$k[i] + 1L)
+        df[i, k] <- df[i, k]
+      else
+        df[i, k] <- NA
+    }
+  }
   
 }
