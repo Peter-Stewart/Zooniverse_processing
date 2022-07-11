@@ -203,8 +203,6 @@ subjects_sub <- subjects_sub %>% unite(DateTimeNum, c("DateNum", "TimeNum"), sep
 subjects_sub$DateTimeLub <- as_datetime(subjects_sub$DateTimeNum)
 
 
-
-
 # Fixes ####
 # Dates/times are wrong for three sites where camera 15 was deployed, due to a fault with the camera
 # Correct these using offset calculated from known deployment time
@@ -247,6 +245,50 @@ errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
 user_classifications <- rbind(errors, correct)
 
 #hist(user_classifications$DateTimeLub, breaks=100) # Confirm that all date/times are now within the correct range
+
+# Fixes for subjects_sub ####
+# Dates/times are wrong for three sites where camera 15 was deployed, due to a fault with the camera
+# Correct these using offset calculated from known deployment time
+
+# Site 35
+rm(errors); rm(correct)''
+errors <- subjects_sub %>% filter(site=="Site_35")
+correct <- subjects_sub %>% filter(site!="Site_35")
+
+errors$DateTimeLub <- errors$DateTimeLub + 34443510 
+errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
+
+subjects_sub <- rbind(errors, correct)
+
+# Dates are wrong for Site 69
+# timestamp = 2020-01-21 15:09:37
+# true time = 2021-02-23 15:11:00
+# offset = 34,473,683 seconds
+rm(errors); rm(correct)
+
+errors <- subjects_sub %>% filter(site=="Site_69")
+correct <- subjects_sub %>% filter(site!="Site_69")
+
+errors$DateTimeLub <- errors$DateTimeLub + 34473683 
+errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
+
+subjects_sub <- rbind(errors, correct)
+
+# Dates are wrong for site 86
+# timestamp = 2020-02-10 13:08:00
+# true time = 2021-03-15 13:09:00
+# offset = 34,473,660
+rm(errors); rm(correct)
+
+errors <- subjects_sub %>% filter(site=="Site_86")
+correct <- subjects_sub %>% filter(site!="Site_86")
+
+errors$DateTimeLub <- errors$DateTimeLub + 34473660 
+errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
+
+subjects_sub <- rbind(errors, correct)
+
+#hist(subjects_sub$DateTimeLub, breaks=100) # Confirm that all date/times are now within the correct range
 
 # Generate consensus classifications ####
 # Calculate number of votes for each species in each subject
@@ -307,61 +349,54 @@ consensus_classifications <- consensus_classifications %>% select(
 # Hours and days for all sites - will need these so that hours/days with no detections can be kept as zero
 setwd("C:/temp/Zooniverse/June22")
 startends <- read.csv("Fieldseason1_startends.csv")
-startends$Deployed <- as_datetime(paste(startends$Deploy_time_24hr, startends$Deploy_date))
-startends$Days <- as.integer(startends$Days)
+startends$Days <- as.integer(startends$Days) + 1L # Add one or it doesn't count the deployment day!
 
+startends$Deploy_month <- ifelse(startends$Deploy_month < 10, paste("0",startends$Deploy_month,sep=""), startends$Deploy_month)
+startends <- startends %>% unite(Deploy_date_num, c("Deploy_year", "Deploy_month", "Deploy_day"), sep = "-", remove = FALSE)
+startends$Deploy_date_lub <- as_date(startends$Deploy_date_num)
 
+user_classifications$Month2 <- as.character(user_classifications$Month)
+user_classifications$Month2 <- ifelse(user_classifications$Month < 10, paste("0",user_classifications$Month2,sep=""), user_classifications$Month2)
+user_classifications$Year <- as.integer(paste("20",user_classifications$Year, sep = ""))
 
-hours <- as.data.frame(0:23); colnames(hours) <- "hr"
+user_classifications <- user_classifications %>% unite(DateNum, c("Year", "Month2", "Day"), sep = "-", remove = FALSE)
+
+hrs <- as.data.frame(0:23); colnames(hrs) <- "hr"
 sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 
+sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
+  filter(!is.na(Days)) %>%
+  uncount(Days)
+  
+
+# Each row is one site
+
+
+
+
+
 # Each row is one day at a site
-
-# test with impala first ####
-impala <- consensus_classifications %>% filter(species=="impala")
-impala$indicator <- 1L
-
-# group by day
-impala2 <- impala %>% group_by(site, day = day(DateTimeLub), hour = hour(DateTimeLub)) %>% summarise(n = sum(indicator), .groups = "keep")
-
-impala3 <- merge(impala2, hours, by.x="hour", by.y="hr", all = TRUE)
-# make wide detection matrix - columns are hours
-impala3 <- unite(impala2, site_day, c(site, day), remove = FALSE)
-
-impala3$hour <- ifelse(impala3$hour < 10, paste0("0", impala3$hour), impala3$hour)
-impala3$hour <- as.factor(paste0("V",impala3$hour))
-impala3$visit <- impala3$hour
-impala3 <- impala3 %>% select(-hour)
-
-impala4 <- impala3 %>% pivot_wider(names_from = visit, values_from = n) 
-
-impala5 <- impala4 %>% select(order(colnames(impala4)))
-
-dd <- matrix(NA, nrow = sum(sitedays$Days), ncol=nrow(hours))
-ff <- sitedays %>% uncount(Days)
-ff$Site <- ifelse(ff$Site < 10, paste0("0", ff$Site), ff$Site)
-ff$Site <- paste0("Site_",ff$Site)
-gg <- rep(NA, nrow(ff))
-gg[1] <- 1
-ff <- cbind(ff,gg)
-for(i in 2:nrow(ff)){
-  if(ff$Site[i]==ff$Site[i-1])
-     ff$gg[i] <-  ff$gg[i-1] + 1L 
-  else
-     ff$gg[i] <- 1L
-}
-ff$site_day <- paste0(ff$Site,"_",ff$gg)
-
-impala6 <- merge(ff, impala5, by="site_day", all.x = TRUE)
-impala7 <- impala6 %>% select(-site, -day, -gg)
 
 
 
 # should be zero if surveyed but not seen, NA if not surveyed - so need to check how many days each camera was deployed for
 # all columns should be zero, but some rows may be entirely NA - since in current format all hours are surveyed, but not all days
-# can then just remove empty days? (days which are all NA)
+# can then just remove empty days? (days which are all NA) - or all 0 after converting NA to 0
 # can always expand to deal with hours at end which aren't measured - fill with NA
 
 # if changing to visits==days then will have more standard ragged array with NA for days which weren't surveyed
 
 # can use time of deployment from sheet and time of last image (whether empty or not) to define start/end times
+
+
+# need to source helper functions here
+source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v1.R", echo = FALSE)
+
+# Create (binary) detection matrix for each species
+sp_list <- unique(levels(consensus_classifications$species))
+
+detmats <- list()
+for(i in 1:length(sp_list)){
+  detmats[[i]] <- generate_detection_matrix_hours(sp=sp_list[i], binary=TRUE)
+}
+names(detmats) <- sp_list
