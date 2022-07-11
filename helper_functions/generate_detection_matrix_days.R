@@ -1,5 +1,3 @@
-# Generates detection matrix where the rows are sites and the columns are days
-
 generate_detection_matrix_hours <- function(sp, binary = FALSE){
   
   # Check if consensus classifications dataframe exists, stop and warn if not
@@ -30,6 +28,7 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
     uncount(Days)
   sites_k$Site <- ifelse(sites_k$Site < 10, paste0("0", sites_k$Site), sites_k$Site)
   sites_k$Site <- paste0("Site_",sites_k$Site)
+  sites_k$Site_f <- as.factor(sites_k$Site)
   k <- rep(NA, nrow(sites_k))
   k[1] <- 1
   sites_k <- cbind(sites_k,k)
@@ -41,6 +40,27 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
   }
   sites_k$k_date <- sites_k$Deploy_date_lub + (sites_k$k - 1)
 
-  # Merge sites_k with consensus classifications so we know which k day the detection was on
+  # Merge sites_k with consensus classifications so we know which visit (day) k each detection was on
+  templist <- list()
+  for(i in 1:length(unique(sites_k$Site))){
+    isite <- unique(sites_k$Site)[i]
+    temp_df <- df %>% filter(site==isite)
+    temp_sites_k <- sites_k %>% filter(Site==isite)
+    temp_df$DateLub <- as_date(temp_df$DateTimeLub)
+    temp_df2 <- merge(temp_df, temp_sites_k, by.x = "DateLub", by.y = "k_date")
+    temp_df2 <- temp_df2 %>% select(-Site_f, -Site)
+    templist[[i]] <- temp_df2
+  }
+  df <- do.call(rbind, templist)
+
+  # Group by site and k
+  df <- df %>% group_by(site, k) %>% summarise(n = sum(indicator), .groups = "keep")
+  
+  # Make from long to wide (i.e. make columns days)
+  df$k <- ifelse(df$k < 10, paste0("0", df$k), df$k)
+  df$k <- as.factor(paste0("V",df$k))
+  df <- df %>% rename(visit = k)
+  df <- df %>% pivot_wider(names_from = visit, values_from = n) 
+  df <- df %>% select(order(colnames(df)))
   
 }
