@@ -1,4 +1,4 @@
-generate_detection_matrix_hours <- function(sp, binary = FALSE){
+generate_detection_matrix_days <- function(sp, binary = FALSE){
   
   # Check if consensus classifications dataframe exists, stop and warn if not
   if(!exists("consensus_classifications")){
