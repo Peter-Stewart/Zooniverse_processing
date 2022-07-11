@@ -72,6 +72,7 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
   # Add rows for the days which were surveyed but had zero detections
   sites_names <- sites_k %>% select(Site_f) %>% unique()
   df <- merge(sites_names, df, by.x = "Site_f", by.y = "site", all.x = TRUE)
+  df <- df %>% rename(site = Site_f)
   
   # Add columns up to max value of k (columns missing when sp not seen on last visits) 
   # Also adds columns for visits in which no sites saw the species
@@ -84,6 +85,7 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
       col_list[[i]] <- temp
       }
     }
+  col_list<-col_list[!sapply(col_list,is.null)]
   col_df <- do.call(cbind, col_list)
   df <- cbind(df, col_df)
   df <- df %>% select(order(colnames(df))) # Re-order columns
@@ -93,12 +95,19 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
   
   # Then fill from right with NA for k_max - k[i] cells
   for(i in 1:nrow(df)){
-    for(k in 1:max(sites_k$k) + 1L){
-      if(k <= sites_k$k[i] + 1L)
+    for(k in 1:max(sitedays$Days) + 1L){
+      if(k <= sitedays$Days[i] + 1L)
         df[i, k] <- df[i, k]
       else
         df[i, k] <- NA
     }
   }
+  
+  # Optionally return a binary detection matrix (1 = detected, 0 = not detected, NA = not surveyed)
+  if(binary == TRUE){
+    df[,-1] <- ifelse(df[,-1] > 0, 1, 0)
+  }
+  
+  return(df)
   
 }
