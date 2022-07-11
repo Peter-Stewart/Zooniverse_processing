@@ -364,13 +364,22 @@ user_classifications <- user_classifications %>% unite(DateNum, c("Year", "Month
 hrs <- as.data.frame(0:23); colnames(hrs) <- "hr"
 sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 
-sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
-  filter(!is.na(Days)) %>%
-  uncount(Days)
+#sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
+#  filter(!is.na(Days)) %>%
+#  uncount(Days)
   
 
 # Each row is one site
+source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v1.R", echo = FALSE)
 
+# Create (binary) detection matrix for each species
+sp_list <- unique(levels(consensus_classifications$species))
+
+detmats <- list()
+for(i in 1:length(sp_list)){
+  detmats[[i]] <- generate_detection_matrix_days(sp=sp_list[i], binary=TRUE)
+}
+names(detmats) <- sp_list
 
 
 
