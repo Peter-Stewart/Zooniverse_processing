@@ -63,4 +63,29 @@ generate_detection_matrix_hours <- function(sp, binary = FALSE){
   df <- df %>% pivot_wider(names_from = visit, values_from = n) 
   df <- df %>% select(order(colnames(df)))
   
+  # Add rows for the days which were surveyed but had zero detections
+  sites_names <- sites_k %>% select(Site_f) %>% unique()
+  df <- merge(sites_names, df, by.x = "Site_f", by.y = "site", all.x = TRUE)
+  
+  # Add columns up to max value of k (columns missing when sp not seen on last visits) 
+  # Also adds columns for visits in which no sites saw the species
+  col_list <- list()
+  for(i in 1:max(sites_k$k)){
+    temp <- rep(NA, nrow(df))
+    temp <- as.data.frame(temp)
+    colnames(temp) <- ifelse(i < 10, paste0("V","0",i), paste0("V",i))
+    if(!colnames(temp) %in% colnames(df)){
+      col_list[[i]] <- temp
+      }
+    }
+  col_list2 <- col_list %>% compac
+  col_df <- do.call(rbind, col_list)
+  
+  # Make each visit value observed if any observed, 0 if visited but unobserved, NA if not visited
+  df[is.na(df)] <- 0 # Make every NA zero
+  
+  
+  # Fill from right with NA for k_max - k[i] cells
+  
+  
 }
