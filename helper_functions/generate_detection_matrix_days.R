@@ -74,6 +74,13 @@ generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers
   df <- merge(sites_names, df, by.x = "Site_f", by.y = "site", all.x = TRUE)
   df <- df %>% rename(site = Site_f)
   
+  # Optionally (default behaviour) turn the site ID's into integers
+  if(sites_as_integers == TRUE){
+    df$site <- gsub("Site_","",df$site)
+    df$site <- as.integer(df$site)
+    df <- df[order(df$site),]
+  }
+  
   # Add columns up to max value of k (columns missing when sp not seen on last visits) 
   # Also adds columns for visits in which no sites saw the species
   col_list <- list()
@@ -101,13 +108,6 @@ generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers
       else
         df[i, k] <- NA
     }
-  }
-  
-  # Optionally (default behaviour) turn the site ID's into integers
-  if(sites_as_integers == TRUE){
-    df$site <- gsub("Site_","",df$site)
-    df$site <- as.integer(df$site)
-    df <- df[order(df$site),]
   }
   
   # Optionally return a binary detection matrix (1 = detected, 0 = not detected, NA = not surveyed)
