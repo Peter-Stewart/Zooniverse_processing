@@ -56,8 +56,6 @@ site_data$succulent_total[is.na(site_data$succulent_total)] <- 0
 site_data$tree_total[is.na(site_data$tree_total)] <- 0
 
 
-
-
 # Calculate how often site is used by livestock (inc. camels)
 livestock <- detmats$livestock[,-1] + detmats$camel[,-1]
 livestock_proportion <- matrix(NA, ncol = 1, nrow = nrow(livestock))
@@ -163,9 +161,6 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
 dmat <- generate_distance_matrix(site_data, log = TRUE)
 
 # simulate detection covariate for now
-
-x <- rnorm(nrow(dmat), 0, 1)
-m <- rnorm(nrow(dmat), 0, 1)
 w <- matrix(NA, nrow=nrow(dmat), ncol=max(sitedays$Days))
 for(i in 1:nrow(dmat)){
   for(k in 1:sitedays$Days[i]){
@@ -206,8 +201,8 @@ m1_nc <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occup
                data = dlist,
                chains = 4,
                cores = 4,
-               warmup = 1750,
-               iter = 2750,
+               warmup = 2500,
+               iter = 3500,
                seed = 33)
 
 dashboard(m1_nc)
