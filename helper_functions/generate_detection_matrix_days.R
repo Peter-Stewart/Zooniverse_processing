@@ -1,4 +1,4 @@
-generate_detection_matrix_days <- function(sp, binary = FALSE){
+generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers = TRUE){
   
   # Check if consensus classifications dataframe exists, stop and warn if not
   if(!exists("consensus_classifications")){
@@ -101,6 +101,13 @@ generate_detection_matrix_days <- function(sp, binary = FALSE){
       else
         df[i, k] <- NA
     }
+  }
+  
+  # Optionally (default behaviour) turn the site ID's into integers
+  if(sites_as_integers == TRUE){
+    df$site <- gsub("Site_","",df$site)
+    df$site <- as.integer(df$site)
+    df <- df[order(df$site),]
   }
   
   # Optionally return a binary detection matrix (1 = detected, 0 = not detected, NA = not surveyed)
