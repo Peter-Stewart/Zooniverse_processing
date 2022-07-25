@@ -105,7 +105,6 @@ model{
   // Priors
   k_bar ~ normal(0, 0.2);
   beta_opuntia ~ normal(0,1);
-  beta_fruit ~ normal(0,1);
   beta_d_water ~ normal(0,1);
   beta_d_road ~ normal(0,1);
   beta_livestock ~ normal(0,1);
