@@ -1,3 +1,5 @@
+# See here: https://discourse.mc-stan.org/t/deriving-abundance-from-a-distance-sampling-model/24565/7
+
 # Packages
 library(rethinking)
 library(dplyr)
@@ -22,6 +24,7 @@ df <- merge(df, t_lengths, by="grid_square")
 # Make sure sites are same order in both df and t_lengths
 df <- df[order(df$grid_square),]
 t_lengths <- t_lengths[order(t_lengths$grid_square),]
+
 
 # Get rid of everything over 80m
 df <- df %>% filter(distance <= 80)
@@ -294,4 +297,63 @@ axis(side = 1, at = 1:41, labels = rownames(y_n_s), las = 2)
 points(x=1:41, y=mu_n_s, pch=16)
 for(i in 1:41){
   lines(x = rep(i,2), y = c(pi89_n_s[2,i],pi89_n_s[1,i]))
+}
+
+
+# Combine estimates for each size/fruit class to get an overall Opuntia (relative) volume for each grid square
+# Model each size class as hemisphere with r = 0.5m, 1.5m, 2.5m (small, medium and large respectively) to get volume
+fruiting_volume <- post_f_l$n * 32.725 +
+                   post_f_m$n * 7.07 +
+                   post_f_s$n * 0.26
+
+non_fruiting_volume <- post_n_l$n * 32.725 +
+                       post_n_m$n * 7.07 +
+                       post_n_s$n * 0.26
+
+total_volume <- fruiting_volume + non_fruiting_volume
+
+mu_f <- apply(fruiting_volume, 2, median) / t_lengths$length
+pi89_f <- apply(fruiting_volume, 2, HPDI, prob=0.89)
+for(i in 1:ncol(pi89_f)){
+  pi89_f[,i] <- pi89_f[,i] / t_lengths$length[i]
+}
+mu_n <- apply(non_fruiting_volume, 2, median) / t_lengths$length
+pi89_n <- apply(non_fruiting_volume, 2, HPDI, prob=0.89)
+for(i in 1:ncol(pi89_n)){
+  pi89_n[,i] <- pi89_n[,i] / t_lengths$length[i]
+}
+mu_t <- apply(total_volume, 2, median) / t_lengths$length
+pi89_t <- apply(total_volume, 2, HPDI, prob=0.89)
+for(i in 1:ncol(pi89_t)){
+  pi89_t[,i] <- pi89_t[,i] / t_lengths$length[i]
+}
+
+# Plot
+par(mfrow=c(3,1))
+
+plot(NULL, xlim=c(1,41), ylim=c(0,35), xlab="Grid square", 
+     xaxt = "n",
+     ylab="Relative volume (median +/- 89% C.I.", main="Fruiting")
+axis(side = 1, at = 1:41, labels = rownames(y_n_s), las = 2)
+points(x=1:41, y=mu_f, pch=16)
+for(i in 1:41){
+  lines(x = rep(i,2), y = c(pi89_f[2,i],pi89_f[1,i]))
+}
+
+plot(NULL, xlim=c(1,41), ylim=c(0,35), xlab="Grid square", 
+     xaxt = "n",
+     ylab="Relative volume (median +/- 89% C.I.", main="Non-fruiting")
+axis(side = 1, at = 1:41, labels = rownames(y_n_s), las = 2)
+points(x=1:41, y=mu_n, pch=16)
+for(i in 1:41){
+  lines(x = rep(i,2), y = c(pi89_n[2,i],pi89_n[1,i]))
+}
+
+plot(NULL, xlim=c(1,41), ylim=c(0,35), xlab="Grid square", 
+     xaxt = "n",
+     ylab="Relative volume (median +/- 89% C.I.", main="Total")
+axis(side = 1, at = 1:41, labels = rownames(y_n_s), las = 2)
+points(x=1:41, y=mu_t, pch=16)
+for(i in 1:41){
+  lines(x = rep(i,2), y = c(pi89_t[2,i],pi89_t[1,i]))
 }
