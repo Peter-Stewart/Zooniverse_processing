@@ -4,14 +4,24 @@ library(dplyr)
 library(tidyr)
 
 # Load data
+setwd("C:/temp/Zooniverse/June22")
+sitedays <- get(load("sitedays.Rdata"))
+detmats <- get(load("detmats.Rdata"))
+
 setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
 site_data <- read.csv("Cameras_site_data_main.csv", header = TRUE)
 site_data <- site_data %>% filter(Site_ID %in% sitedays$Site)
 
 opuntia_data <- read.csv("Cameras_opuntia_data_main.csv", header = TRUE)
 
+tree_data <- read.csv("Cameras_tree_data_main.csv", header = TRUE)
+
 dist_river <- read.csv("distance_to_river.csv", header = TRUE)
 dist_road <- read.csv("distance_to_road.csv", header = TRUE)
+
+df_mu_f <- get(load("grid_square_fruiting.Rdata"))
+df_mu_n <- get(load("grid_square_non_fruiting.Rdata"))
+df_mu_t <- get(load("grid_square_total.Rdata"))
 
 # Merge distance to river/road into the main sites dataframe
 dist_river <- dist_river %>% select(Site_ID, HubDist) %>% rename(dist_river = HubDist)
@@ -42,6 +52,18 @@ site_data$opuntia_total_cover <- (site_data$Opuntia_stricta_FOV + site_data$Opun
                                     (3*site_data$Opuntia_stricta_area) + (3*site_data$Opuntia_other_area))/8
 site_data$opuntia_volume <- site_data$opuntia_total_cover * site_data$Max_height_site
 
+# Count trees at each site
+tree_data <- tree_data %>% filter(!grepl("Fallen", Species)) %>% filter(!grepl("Dead", Species)) # Not counting fallen or dead trees
+tree_sites <- tree_data %>% select(Site_ID, FOV, Area) %>%
+  group_by(Site_ID) %>%
+  summarise(n_trees = FOV+Area) %>%
+  group_by(Site_ID) %>%
+  summarise(n_trees = sum(n_trees)) 
+tree_sites <- tree_sites %>% filter(Site_ID %in% sitedays$Site)
+
+site_data <- merge(site_data, tree_sites, by="Site_ID")
+
+
 # Average % covers across FOV and area
 site_data$grass_total <- (site_data$Grass_FOV + (3*site_data$Grass_area)) / 4
 site_data$forb_total <- (site_data$Forb_FOV + (3*site_data$Forb_area)) / 4
@@ -69,6 +91,13 @@ livestock_proportion$Site_ID <- as.integer(livestock_proportion$Site_ID)
 colnames(livestock_proportion) <- c("livestock_proportion", "Site_ID")
 
 site_data <- merge(site_data, livestock_proportion, by="Site_ID")
+
+# Merge in grid square-level Opuntia densities
+site_data$grid_square <- as.factor(site_data$Grid_square)
+site_data <- merge(site_data, df_mu_t, by="grid_square", all.x = TRUE)
+
+# Ensure that site_data is ordered by site_ID
+site_data <- site_data[order(site_data$Site_ID),]
 
 # Generate distance matrix
 generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_as_days = FALSE, jitter = TRUE, log = FALSE, logbase = 15, squared = FALSE){
@@ -160,15 +189,125 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
 
 dmat <- generate_distance_matrix(site_data, log = TRUE)
 
-# simulate detection covariate for now
-w <- matrix(NA, nrow=nrow(dmat), ncol=max(sitedays$Days))
-for(i in 1:nrow(dmat)){
-  for(k in 1:sitedays$Days[i]){
-    w[i,k] <- rnorm(1,0,1)
-  }
-}
-w[is.na(w)] <- -9999
 
+# Run models #### 
+setwd("C:/temp/ch3_post")
+
+key_sp <- c("baboon",
+            "elephant",
+            "vervetmonkey",
+            "zebragrevys",
+            "impala",
+            "giraffe",
+            "hyenaspotted")
+
+match("baboon", detmats)
+
+indexes <- list()
+for(i in 1:length(detmats)){
+    if(names(detmats[i]) %in% key_sp){
+      indexes[i] <- i
+    }else{
+      indexes[i] <- NULL}
+}
+indexes <- do.call(rbind, indexes)
+  
+  
+# Loop through all key species, run model, save results and diagnostics
+for(sp in 1:length(key_sp)){
+  
+  # Select data for the species
+  dd <- detmats[indexes[sp,]]
+  dd <- dd[[1]]
+  dd <- as.matrix(dd[,-1])
+  dd[is.na(dd)] <- -9999
+  mode(dd) <- "integer"
+  
+  # Prepare data list for Stan
+  dlist <- list(
+    # Number of sites and visits
+    nsites = as.integer(nrow(dmat)),
+    N_maxvisits = as.integer(max(sitedays$Days)),
+    V = as.integer(sitedays$Days),
+    # Observed data
+    y = dd,
+    # Occupancy covariates
+    opuntia_vol = standardize(site_data$opuntia_volume),
+    fruit = standardize(site_data$total_ripe),
+    d_water = standardize(site_data$dist_river),
+    d_road = standardize(site_data$dist_road),
+    livestock = standardize(site_data$livestock_proportion),
+    grass = standardize(site_data$grass_total),
+    forb = standardize(site_data$forb_total),
+    shrub = standardize(site_data$shrub_total),
+    succulent = standardize(site_data$succulent_total),
+    tree = standardize(site_data$n_trees),
+    # Detection covariates
+    
+    # Distance matrix
+    dmat = dmat
+  )
+  
+  # Run the model
+  m1_nc <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/total_effect_no_veg_path.stan",
+                 data = dlist,
+                 chains = 4,
+                 cores = 4,
+                 warmup = 100,
+                 iter = 200)
+  
+  # Save diagnostic plots
+  png(file = paste0(key_sp[sp],"_diagnostics.png"), width = 804, height = 500, units = "px")
+  dashboard(mod_f_l)
+  dev.off()
+  
+  # Save traceplots and trankplots for key parameters
+  png(file = paste0(key_sp[sp],"_traceplots.png"), width = 804, height = 500, units = "px")
+  traceplot(m1_nc, pars=c("beta_opuntia",
+                          "beta_d_water",
+                          "beta_d_road",
+                          "beta_livestock",
+                          "beta_grass",
+                          "beta_forb",
+                          "beta_shrub",
+                          "beta_succulent",
+                          "beta_tree",
+                          "alphadet",
+                          "etasq",
+                          "rhosq"))
+  dev.off()
+  
+  png(file = paste0(key_sp[sp],"_trankplots.png"), width = 804, height = 500, units = "px")
+  trankplot(m1_nc, pars=c("beta_opuntia",
+                          "beta_d_water",
+                          "beta_d_road",
+                          "beta_livestock",
+                          "beta_grass",
+                          "beta_forb",
+                          "beta_shrub",
+                          "beta_succulent",
+                          "beta_tree",
+                          "alphadet",
+                          "etasq",
+                          "rhosq"))
+  dev.off()
+  
+  # Save posterior samples
+  post <- extract.samples(m1_nc)
+  save(post, file = paste0(key_sp[sp],"_total_no_veg_path","_post"))
+  
+  # Clean up between iterations
+  rm(post)
+  rm(n1_nc)
+  rm(dlist)
+  rm(dd)
+  gc()
+  
+}
+
+
+
+# Test with elephants
 dd <- as.matrix(detmats$elephant[,-1])
 dd[is.na(dd)] <- -9999
 mode(dd) <- "integer"
@@ -190,20 +329,20 @@ dlist <- list(
   forb = standardize(site_data$forb_total),
   shrub = standardize(site_data$shrub_total),
   succulent = standardize(site_data$succulent_total),
-  tree = standardize(site_data$tree_total),
+  tree = standardize(site_data$n_trees),
   # Detection covariates
-  w = w,
+  
   # Distance matrix
   dmat = dmat
 )
 
-m1_nc <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/occ_gp_nc_v1.stan",
+m1_nc <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/total_effect_no_veg_path.stan",
                data = dlist,
                chains = 4,
                cores = 4,
-               warmup = 2500,
-               iter = 3500,
-               seed = 33)
+               warmup = 4500,
+               iter = 5500,
+               seed = 99)
 
 dashboard(m1_nc)
 precis(m1_nc)
@@ -296,3 +435,115 @@ shade(pmcov_70CI, x_seq)
 shade(pmcov_60CI, x_seq)
 shade(pmcov_50CI, x_seq)
 curve(eta2 * exp(-rho2 * x^2), add=TRUE, lwd=3, lty=2)
+
+
+
+
+# Simulating intervention ####
+
+# Simulate for the actual sites surveyed
+simsites <- ncol(post$psi) # Use all sites
+nsamples <- length(post$beta_opuntia) # Use all posterior samples
+
+# Matrices to store results
+S1 <- matrix(0, nrow=nsamples, ncol=simsites)
+S2 <- matrix(0, nrow=nsamples, ncol=simsites)
+
+orig_opuntia_vol <- site_data$opuntia_volume
+increased_opuntia_vol <- 1.5 * orig_opuntia_vol
+
+orig_total_ripe <- site_data$total_ripe
+increased_total_ripe <- 1.5 * site_data$total_ripe
+
+# Under status quo 
+for(s in 1:simsites){
+  inv_psi <- post$k_bar + post$k[,s] + 
+    post$beta_opuntia * standardize(orig_opuntia_vol)[s] + 
+    post$beta_fruit * standardize(orig_total_ripe)[s] +
+    post$beta_d_water * standardize(site_data$dist_river)[s] +
+    post$beta_d_road * standardize(site_data$dist_road)[s] +
+    post$beta_livestock * standardize(site_data$livestock_proportion)[s] +
+    post$beta_grass * standardize(site_data$grass_total)[s] +
+    post$beta_shrub * standardize(site_data$shrub_total)[s] +
+    post$beta_succulent * standardize(site_data$succulent_total)[s] +
+    post$beta_tree * standardize(site_data$tree_total)[s]
+  psi_sim <- inv_logit(inv_psi)
+  S1[,s] <- psi_sim
+}
+
+# Under distribution of x after intervention
+for(s in 1:simsites){
+  inv_psi <- post$k_bar + post$k[,s] + 
+    post$beta_opuntia * standardize(increased_opuntia_vol)[s] + 
+    post$beta_fruit * standardize(increased_total_ripe)[s] +
+    post$beta_d_water * standardize(site_data$dist_river)[s] +
+    post$beta_d_road * standardize(site_data$dist_road)[s] +
+    post$beta_livestock * standardize(site_data$livestock_proportion)[s] +
+    post$beta_grass * standardize(site_data$grass_total)[s] +
+    post$beta_shrub * standardize(site_data$shrub_total)[s] +
+    post$beta_succulent * standardize(site_data$succulent_total)[s] +
+    post$beta_tree * standardize(site_data$tree_total)[s]
+  psi_sim <- inv_logit(inv_psi)
+  S2[,s] <- psi_sim
+}
+
+Sdiff <- S2-S1
+hist(Sdiff, breaks=100)
+
+
+
+# Checking out ggdist for plots
+x_test <- as.data.frame(post$beta_opuntia)
+p1 <- ggplot(data = x_test, aes(x = post$beta_opuntia)) +
+  stat_interval +
+  theme_classic()
+p1
+
+
+
+
+# Broad-scale (grid-square) models
+grid_data <- site_data %>% filter(!is.na(grid_total_volume))
+dd <- detmats$elephant
+dd <- dd %>% filter(dd$site %in% grid_data$Site_ID)
+dd <- as.matrix(dd[,-1])
+dd[is.na(dd)] <- -9999
+mode(dd) <- "integer"
+
+dmat <- generate_distance_matrix(grid_data, log = TRUE)
+sitedays_grid <- sitedays %>% filter(Site %in% grid_data$Site_ID)
+
+dlist <- list(
+  # Number of sites and visits
+  nsites = as.integer(nrow(dmat)),
+  N_maxvisits = as.integer(max(sitedays_grid$Days)),
+  V = as.integer(sitedays_grid$Days),
+  # Observed data
+  y = dd,
+  # Occupancy covariates
+  opuntia_vol = standardize(as.numeric(grid_data$grid_total_volume)),
+  d_water = standardize(grid_data$dist_river),
+  d_road = standardize(grid_data$dist_road),
+  livestock = standardize(grid_data$livestock_proportion),
+  grass = standardize(grid_data$grass_total),
+  forb = standardize(grid_data$forb_total),
+  shrub = standardize(grid_data$shrub_total),
+  succulent = standardize(grid_data$succulent_total),
+  tree = standardize(grid_data$n_trees),
+  # Detection covariates
+  
+  # Distance matrix
+  dmat = dmat
+)
+
+m_test <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/total_effect_no_veg_path.stan",
+               data = dlist,
+               chains = 4,
+               cores = 4,
+               warmup = 4500,
+               iter = 5500,
+               seed = 99)
+
+dashboard(m_test)
+precis(m_test)
+post <- extract.samples(m_test)
