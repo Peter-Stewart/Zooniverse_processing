@@ -211,10 +211,25 @@ for(i in 1:length(detmats)){
       indexes[i] <- NULL}
 }
 indexes <- do.call(rbind, indexes)
+
+# List the models which will be run
+model_list <- c("direct_effects",
+                "total_effect_no_veg_path",
+                "total_effect_veg_path")
+
+# Parameters to control the models
+n_chains <- 4 # Number of chains
+n_cores <- 4 # Number of computer cores
+n_warmup <- 100 # Number of warmup iterations
+n_iter <- 200 # Total number of iterations (warmup + sample)
   
+# For each model 
+# loop through all key species, run model, save results and diagnostics
+for(m in 1:length(model_list)){
   
-# Loop through all key species, run model, save results and diagnostics
-for(sp in 1:length(key_sp)){
+  setwd(paste0("C:/temp/ch3_post/",model_list[m]))
+  
+  for(sp in 1:length(key_sp)){
   
   # Select data for the species
   dd <- detmats[indexes[sp,]]
@@ -249,105 +264,50 @@ for(sp in 1:length(key_sp)){
   )
   
   # Run the model
-  m1_nc <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/total_effect_no_veg_path.stan",
+  m1_nc <- cstan(file = paste0("C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/",model_list[m],".stan"),
                  data = dlist,
-                 chains = 4,
-                 cores = 4,
-                 warmup = 100,
-                 iter = 200)
+                 chains = n_chains,
+                 cores = n_cores,
+                 warmup = n_warmup,
+                 iter = n_iter)
   
   # Save diagnostic plots
-  png(file = paste0(key_sp[sp],"_diagnostics.png"), width = 804, height = 500, units = "px")
-  dashboard(mod_f_l)
-  dev.off()
-  
-  # Save traceplots and trankplots for key parameters
-  png(file = paste0(key_sp[sp],"_traceplots.png"), width = 804, height = 500, units = "px")
-  traceplot(m1_nc, pars=c("beta_opuntia",
-                          "beta_d_water",
-                          "beta_d_road",
-                          "beta_livestock",
-                          "beta_grass",
-                          "beta_forb",
-                          "beta_shrub",
-                          "beta_succulent",
-                          "beta_tree",
-                          "alphadet",
-                          "etasq",
-                          "rhosq"))
-  dev.off()
-  
-  png(file = paste0(key_sp[sp],"_trankplots.png"), width = 804, height = 500, units = "px")
-  trankplot(m1_nc, pars=c("beta_opuntia",
-                          "beta_d_water",
-                          "beta_d_road",
-                          "beta_livestock",
-                          "beta_grass",
-                          "beta_forb",
-                          "beta_shrub",
-                          "beta_succulent",
-                          "beta_tree",
-                          "alphadet",
-                          "etasq",
-                          "rhosq"))
+  png(file = paste0(key_sp[sp],"_",model_list[m],"_diagnostics.png"), width = 804, height = 500, units = "px")
+  dashboard(m1_nc)
   dev.off()
   
   # Save posterior samples
   post <- extract.samples(m1_nc)
-  save(post, file = paste0(key_sp[sp],"_total_no_veg_path","_post"))
+  save(post, file = paste0(key_sp[sp],"_",model_list[m],"_post"))
   
+  # Save traceplots and trankplots for key parameters
+  p <- names(post)[grep("beta", names(post))] # Beta parameters
+  p2 <- c("alphadet", "etasq", "rhosq", "k_bar") # Other parameters
+  
+  png(file = paste0(key_sp[sp],"_",model_list[m],"_traceplots.png"), width = 804, height = 500, units = "px")
+  traceplot(m1_nc, pars=c(p, p2))
+  dev.off()
+  
+  png(file = paste0(key_sp[sp],"_",model_list[m],"_trankplots.png"), width = 804, height = 500, units = "px")
+  trankplot(m1_nc, pars=c(p, p2))
+  dev.off()
+  
+
   # Clean up between iterations
   rm(post)
-  rm(n1_nc)
+  rm(p)
+  rm(m1_nc)
   rm(dlist)
   rm(dd)
   gc()
   
 }
+}
 
 
 
-# Test with elephants
-dd <- as.matrix(detmats$elephant[,-1])
-dd[is.na(dd)] <- -9999
-mode(dd) <- "integer"
 
-dlist <- list(
-  # Number of sites and visits
-  nsites = as.integer(nrow(dmat)),
-  N_maxvisits = as.integer(max(sitedays$Days)),
-  V = as.integer(sitedays$Days),
-  # Observed data
-  y = dd,
-  # Occupancy covariates
-  opuntia_vol = standardize(site_data$opuntia_volume),
-  fruit = standardize(site_data$total_ripe),
-  d_water = standardize(site_data$dist_river),
-  d_road = standardize(site_data$dist_road),
-  livestock = standardize(site_data$livestock_proportion),
-  grass = standardize(site_data$grass_total),
-  forb = standardize(site_data$forb_total),
-  shrub = standardize(site_data$shrub_total),
-  succulent = standardize(site_data$succulent_total),
-  tree = standardize(site_data$n_trees),
-  # Detection covariates
-  
-  # Distance matrix
-  dmat = dmat
-)
-
-m1_nc <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/total_effect_no_veg_path.stan",
-               data = dlist,
-               chains = 4,
-               cores = 4,
-               warmup = 4500,
-               iter = 5500,
-               seed = 99)
-
-dashboard(m1_nc)
-precis(m1_nc)
-post <- extract.samples(m1_nc)
-
+#####
 dmat2 <- dmat^2
 
 K <- matrix(0, nrow=nrow(dmat), ncol=ncol(dmat))
