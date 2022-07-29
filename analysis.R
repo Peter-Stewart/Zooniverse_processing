@@ -201,8 +201,6 @@ key_sp <- c("baboon",
             "giraffe",
             "hyenaspotted")
 
-match("baboon", detmats)
-
 indexes <- list()
 for(i in 1:length(detmats)){
     if(names(detmats[i]) %in% key_sp){
@@ -223,6 +221,11 @@ n_cores <- 4 # Number of computer cores
 n_warmup <- 100 # Number of warmup iterations
 n_iter <- 200 # Total number of iterations (warmup + sample)
   
+
+# Temporarily suppress warnings
+oldw <- getOption("warn")
+options(warn = -1)
+
 # For each model 
 # loop through all key species, run model, save results and diagnostics
 for(m in 1:length(model_list)){
@@ -280,22 +283,21 @@ for(m in 1:length(model_list)){
   post <- extract.samples(m1_nc)
   save(post, file = paste0(key_sp[sp],"_",model_list[m],"_post"))
   
-  # Save traceplots and trankplots for key parameters
+  # Parameters to save in traceplots and trankplots
   p <- names(post)[grep("beta", names(post))] # Beta parameters
   p2 <- c("alphadet", "etasq", "rhosq", "k_bar") # Other parameters
   
-  png(file = paste0(key_sp[sp],"_",model_list[m],"_traceplots.png"), width = 804, height = 500, units = "px")
-  traceplot(m1_nc, pars=c(p, p2))
-  dev.off()
-  
+  # Save traceplots and trankplots for key parameters
   png(file = paste0(key_sp[sp],"_",model_list[m],"_trankplots.png"), width = 804, height = 500, units = "px")
   trankplot(m1_nc, pars=c(p, p2))
+  dev.off()
+  jpeg(file = paste0(key_sp[sp],"_",model_list[m],"_traceplots.jpeg"), width = 804, height = 500, units = "px")
+  traceplot(m1_nc, pars=c(p, p2), inc_warmup = TRUE)
   dev.off()
   
 
   # Clean up between iterations
   rm(post)
-  rm(p)
   rm(m1_nc)
   rm(dlist)
   rm(dd)
@@ -303,8 +305,8 @@ for(m in 1:length(model_list)){
   
 }
 }
-
-
+# Re-enable warnings
+options(warn = oldw)
 
 
 #####
