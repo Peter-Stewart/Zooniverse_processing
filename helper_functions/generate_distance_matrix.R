@@ -1,6 +1,6 @@
 # Generates distance matrix from dataframe with columns that contain "lat" or "long"
 
-generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_as_days = FALSE, jitter = TRUE, log = FALSE, logbase = 15, squared = FALSE){
+generate_distance_matrix <- function(df, rescale = FALSE, rescale_constant = 1, sites_as_days = FALSE, jitter = TRUE, jitter_amount = 1.001, log = FALSE, logbase = 15, squared = FALSE){
   
   # Select columns which contain "long" or "lat" in their name
   coords <- df %>% select(contains("long") | contains("lat"))
@@ -37,38 +37,23 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
     coords <- coords %>% select(-site_day)
   }
   
-  # If center is true, center around zero
-  if(center == TRUE & rescale == FALSE){
-    coords$GPS_long <- scale(coords$GPS_long, scale = FALSE)
-    coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE)
-  }
-  
-  # If rescale is true, rescale using max lat for both lat and long to avoid warping distances
-  if(center == FALSE & rescale == TRUE){
-    coords$GPS_long <- scale(coords$GPS_long, center = FALSE, scale = FALSE) / max(coords$GPS_lat) *10
-    coords$GPS_lat <- scale(coords$GPS_lat, center = FALSE, scale = FALSE) / max(coords$GPS_lat) *10
-  }
-  
-  # If center and rescale are  true, center to zero and rescale using max lat for both lat and long to avoid warping distances
-  if(center == TRUE & rescale == TRUE){
-    coords$GPS_long <- scale(coords$GPS_long, scale = FALSE) / max(coords$GPS_lat) *10
-    coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE) / max(coords$GPS_lat) *10
-  }
-  
-  coords <- coords %>% select(GPS_long, GPS_lat)
-  colnames(coords) <- c("x", "y")
-  
-  attr(coords$x, "scaled:center") <- NULL
-  attr(coords$y, "scaled:center") <- NULL
-  
+
   # Calculate distance matrix
   dmat <- dist(coords, diag=T, upper=T)
   dmat <- as.matrix(dmat)
   
+  # Optionally rescale by dividing each distance by some constant (default = 1, i.e. you need to define a constant or nothing will happen!)
+  if(rescale == TRUE){
+    if(rescale_constant == 1){
+      warning("Please define a constant to rescale distances, using the rescale_constant option.")
+    }
+    dmat <- dmat / rescale_constant
+  }
+  
   # Optionally add jitter to off-diagonal zeros to prevent numerical underflow
   if(jitter == TRUE){
     warning("Adding jitter to off-diagonal zeros to prevent numerical underflow in Gaussian Process. Set jitter = FALSE to disable.")
-    dmat <- ifelse(dmat==0, dmat+1.001, dmat)
+    dmat <- ifelse(dmat==0, dmat+jitter_amount, dmat)
     diag(dmat) <- 0
   }
   
