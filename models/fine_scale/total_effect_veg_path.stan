@@ -100,8 +100,8 @@ model{
   
   alphadet ~ normal(0,0.5);
 
-  rhosq ~ exponential(2);
-  etasq ~ exponential(0.7);
+  etasq ~ exponential(2);
+  rhosq ~ lognormal(0, 1);
   z ~ normal(0, 1);
   
   // Log psi and log(1-psi)
