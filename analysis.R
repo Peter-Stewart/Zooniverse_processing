@@ -2,6 +2,7 @@
 library(rethinking)
 library(dplyr)
 library(tidyr)
+library(bayesplot)
 
 # Load data
 setwd("C:/temp/Zooniverse/June22")
@@ -38,6 +39,7 @@ fruit_sites[is.na(fruit_sites)] <- 0
 fruit_sites <- fruit_sites %>% filter(Site_ID %in% sitedays$Site)
 
 site_data <- merge(site_data, fruit_sites, by="Site_ID")
+site_data$total_ripe_bin <- ifelse(site_data$total_ripe > 0, 1, 0)
 
 # Calculate Opuntia volume
 opuntia_max_heights <- opuntia_data %>% select(Site_ID, Max_height) %>%
@@ -100,7 +102,7 @@ site_data <- merge(site_data, df_mu_t, by="grid_square", all.x = TRUE)
 site_data <- site_data[order(site_data$Site_ID),]
 
 # Generate distance matrix
-generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_as_days = FALSE, jitter = TRUE, log = FALSE, logbase = 15, squared = FALSE){
+generate_distance_matrix <- function(df, rescale = FALSE, rescale_constant = 1, sites_as_days = FALSE, jitter = TRUE, jitter_amount = 1.001, log = FALSE, logbase = 15, squared = FALSE){
   
   # Select columns which contain "long" or "lat" in their name
   coords <- df %>% select(contains("long") | contains("lat"))
@@ -137,38 +139,23 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
     coords <- coords %>% select(-site_day)
   }
   
-  # If center is true, center around zero
-  if(center == TRUE & rescale == FALSE){
-    coords$GPS_long <- scale(coords$GPS_long, scale = FALSE)
-    coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE)
-  }
-  
-  # If rescale is true, rescale using max lat for both lat and long to avoid warping distances
-  if(center == FALSE & rescale == TRUE){
-    coords$GPS_long <- scale(coords$GPS_long, center = FALSE, scale = FALSE) / max(coords$GPS_lat) *10
-    coords$GPS_lat <- scale(coords$GPS_lat, center = FALSE, scale = FALSE) / max(coords$GPS_lat) *10
-  }
-  
-  # If center and rescale are  true, center to zero and rescale using max lat for both lat and long to avoid warping distances
-  if(center == TRUE & rescale == TRUE){
-    coords$GPS_long <- scale(coords$GPS_long, scale = FALSE) / max(coords$GPS_lat) *10
-    coords$GPS_lat <- scale(coords$GPS_lat, scale = FALSE) / max(coords$GPS_lat) *10
-  }
-  
-  coords <- coords %>% select(GPS_long, GPS_lat)
-  colnames(coords) <- c("x", "y")
-  
-  attr(coords$x, "scaled:center") <- NULL
-  attr(coords$y, "scaled:center") <- NULL
-  
+
   # Calculate distance matrix
   dmat <- dist(coords, diag=T, upper=T)
   dmat <- as.matrix(dmat)
   
+  # Optionally rescale by dividing each distance by some constant (default = 1, i.e. you need to define a constant or nothing will happen!)
+  if(rescale == TRUE){
+    if(rescale_constant == 1){
+      warning("Please define a constant to rescale distances, using the rescale_constant option.")
+    }
+    dmat <- dmat / rescale_constant
+  }
+  
   # Optionally add jitter to off-diagonal zeros to prevent numerical underflow
   if(jitter == TRUE){
     warning("Adding jitter to off-diagonal zeros to prevent numerical underflow in Gaussian Process. Set jitter = FALSE to disable.")
-    dmat <- ifelse(dmat==0, dmat+1.001, dmat)
+    dmat <- ifelse(dmat==0, dmat+jitter_amount, dmat)
     diag(dmat) <- 0
   }
   
@@ -187,7 +174,11 @@ generate_distance_matrix <- function(df, center = FALSE, rescale = FALSE, sites_
   } 
 }
 
-dmat <- generate_distance_matrix(site_data, log = TRUE)
+dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
+
+
+hist(as.numeric(dmat), breaks = 100)
+
 
 
 # Run models #### 
@@ -200,6 +191,10 @@ key_sp <- c("baboon",
             "impala",
             "giraffe",
             "hyenaspotted")
+
+key_sp <- c("zebragrevys", "elephant","giraffe")
+
+key_sp <- "elephant"
 
 indexes <- list()
 for(i in 1:length(detmats)){
@@ -215,11 +210,13 @@ model_list <- c("direct_effects",
                 "total_effect_no_veg_path",
                 "total_effect_veg_path")
 
+model_list <- "direct_effects"
+
 # Parameters to control the models
 n_chains <- 4 # Number of chains
 n_cores <- 4 # Number of computer cores
-n_warmup <- 100 # Number of warmup iterations
-n_iter <- 200 # Total number of iterations (warmup + sample)
+n_warmup <- 3000 # Number of warmup iterations
+n_iter <- 4000 # Total number of iterations (warmup + sample)
   
 
 # Temporarily suppress warnings
@@ -281,23 +278,33 @@ for(m in 1:length(model_list)){
   
   # Save posterior samples
   post <- extract.samples(m1_nc)
-  save(post, file = paste0(key_sp[sp],"_",model_list[m],"_post"))
+  save(post, file = paste0(key_sp[sp],"_",model_list[m],"_post.Rdata"))
   
   # Parameters to save in traceplots and trankplots
   p <- names(post)[grep("beta", names(post))] # Beta parameters
   p2 <- c("alphadet", "etasq", "rhosq", "k_bar") # Other parameters
   
-  # Save traceplots and trankplots for key parameters
+  # Save traceplots for key parameters
+  png(file = paste0(key_sp[sp],"_",model_list[m],"_traceplots.png"), width = 804, height = 500, units = "px")
+  rstan::traceplot(m1_nc, pars=c(p, p2), inc_warmup = TRUE)
+  dev.off()
+  
+  # Save trankplots for key parameters
   png(file = paste0(key_sp[sp],"_",model_list[m],"_trankplots.png"), width = 804, height = 500, units = "px")
   trankplot(m1_nc, pars=c(p, p2))
   dev.off()
-  jpeg(file = paste0(key_sp[sp],"_",model_list[m],"_traceplots.jpeg"), width = 804, height = 500, units = "px")
-  traceplot(m1_nc, pars=c(p, p2), inc_warmup = TRUE)
+  
+  # Save hist of centred marginal energy distribution and first-differenced distribution overlaid
+  color_scheme_set("darkgray") # Set colour scheme for Bayesplot 
+  np <- nuts_params(mtest) # Extract NUTS parameters
+  png(file = paste0(key_sp[sp],"_",model_list[m],"_HMC_energy.png"), width = 804, height = 500, units = "px")
+  mcmc_nuts_energy(np)
   dev.off()
   
-
+  
   # Clean up between iterations
   rm(post)
+  rm(np)
   rm(m1_nc)
   rm(dlist)
   rm(dd)
@@ -308,6 +315,44 @@ for(m in 1:length(model_list)){
 # Re-enable warnings
 options(warn = oldw)
 
+
+
+
+# Load posterior distribution 
+post <- get(load("zebragrevys_direct_effects_post_fruitbin.Rdata"))
+post2 <- get(load("zebragrevys_direct_effects_post.Rdata"))
+
+par(mfrow=c(1,2))
+
+
+post <- get(load("zebragrevys_direct_effects_post_fruitbin.Rdata"))
+post <- get(load("elephant_direct_effects_post.Rdata"))
+
+setwd("C:/temp/ch3_post/total_effect_no_veg_path")
+post <- get(load("elephant_total_effect_no_veg_path_post.Rdata"))
+post <- get(load("zebragrevys_total_effect_no_veg_path_post.Rdata"))
+post <- get(load("giraffe_total_effect_no_veg_path_post.Rdata"))
+
+dens(post$beta_opuntia)
+
+library(ggdist)
+df1 <- as.data.frame(post1$beta_opuntia)
+df2 <- as.data.frame(post2$beta_opuntia)
+df3 <- as.data.frame(post3$beta_opuntia)
+
+df1$species <- as.factor("elephant")
+colnames(df1) <- c("beta","species")
+df2$species <- as.factor("zebragrevys")
+colnames(df2) <- c("beta","species")
+df3$species <- as.factor("giraffe")
+colnames(df3) <- c("beta","species")
+
+df <- rbind(df1, df2, df3)
+
+p1 <- ggplot(df, aes(y = species, x = beta, slab_fill = species, slab_color = species)) +
+  stat_dotsinterval() + 
+  theme_classic() 
+p1
 
 #####
 dmat2 <- dmat^2
@@ -325,7 +370,7 @@ rownames(Rho) <- seq(1,nrow(dmat),1)
 colnames(Rho) <- rownames(Rho)
 
 par(mfrow=c(1,1))
-plot(GPS_lat~GPS_long, data=site_data, col=rangi2, pch=16, main="Correlation inferred from model")
+plot(GPS_lat~GPS_long, data=site_data, col=rangi2, pch=16, main="Correlation inferred from model (elephant)")
 
 for(i in 1:nrow(dmat)){
   for(j in 1:ncol(dmat)){
@@ -377,7 +422,7 @@ shade(priorcov_70CI, x_seq)
 shade(priorcov_60CI, x_seq)
 shade(priorcov_50CI, x_seq)
 
-x_seq <- seq(0,4,0.01)
+x_seq <- seq(0,6.1,0.01)
 pmcov <- sapply(x_seq, function(x) post$etasq * exp(-post$rhosq * x^2))
 pmcov_mu <- apply(pmcov, 2, median)
 pmcov_95CI <- apply(pmcov, 2, HPDI, prob=0.95)
@@ -388,7 +433,7 @@ pmcov_60CI <- apply(pmcov, 2, HPDI, prob=0.60)
 pmcov_50CI <- apply(pmcov, 2, HPDI, prob=0.50)
 
 par(mfrow=c(1,1))
-plot(NULL, xlab="Distance", ylab="Covariance", xlim=c(0,4), ylim=c(0,10), main="Posterior w/ Compatability Intervals")
+plot(NULL, xlab="Distance", ylab="Covariance", xlim=c(0,6.1), ylim=c(0,3), main="Posterior w/ Compatability Intervals")
 lines(x_seq, pmcov_mu, lwd=2)
 shade(pmcov_95CI, x_seq)
 shade(pmcov_89CI, x_seq)
