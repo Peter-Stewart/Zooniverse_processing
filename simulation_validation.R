@@ -157,6 +157,12 @@ post <- extract.samples(mtest)
 key_pars <- names(post)[grep("beta", names(post))] # Beta parameters
 key_pars2 <- c("alphadet", "k_bar") # Other parameters
 key_pars <- c(key_pars, key_pars2)
+par_symbols <- c(expression(beta[x]),
+                 expression(beta[m]),
+                 expression(beta[DET]),
+                 expression(alpha[DET]),
+                 expression(bar(k)))
+
 
 true_vals <- c(betax, betam, betadet, alphadet, k_bar) # True values
 
@@ -173,7 +179,7 @@ for(p in 1:length(key_pars)){
   PI60 <- HPDI(pr, prob = 0.60)
   PI50 <- HPDI(pr, prob = 0.50)
   PI_all <- rbind(PI95, PI89, PI80, PI70, PI60, PI50)
-  plot(den, main = paste(key_pars[p]))
+  plot(den, main = par_symbols[p])
   for(i in 1:nrow(PI_all)){
     l <- min(which(den$x >= PI_all[i,1]))
     h <- max(which(den$x < PI_all[i,2]))
