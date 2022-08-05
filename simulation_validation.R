@@ -3,6 +3,7 @@ library(rethinking)
 library(MASS)
 library(dplyr)
 library(tidyr)
+library(bayesplot)
 
 # Source helper functions ####
 source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v1.R", echo = FALSE)
@@ -143,21 +144,51 @@ precis(mtest)
 # Trankplots
 trankplot(mtest, pars = c("beta_x", "beta_m", "alphadet", "betadet", "k_bar", "etasq", "rhosq"))
 
+# Bayesplot diagnostics
+color_scheme_set("darkgray") # Set colour scheme for Bayesplot diagnostics
+np <- nuts_params(mtest) # Extract NUTS parameters
+mcmc_nuts_energy(np) # Centred marginal energy distribution and first-differenced distribution overlaid
+
 # Extract posterior samples
 post <- extract.samples(mtest)
 
 # Compare posterior distributions for key parameters with true values ####
-par(mfrow=c(2,3))
-dens(post$beta_x, main = expression(beta[x])); abline(v = betax, lty=2)
-dens(post$beta_m, main = expression(beta[m])); abline(v = betam, lty=2)
-dens(post$alphadet, main = expression(alpha[DET])); abline(v = alphadet, lty=2)
-dens(post$betadet, main = expression(beta[DET])); abline(v = betadet, lty=2)
-dens(post$k_bar, main = expression(bar(k))); abline(v = k_bar, lty = 2)
-par(mfrow=c(1,1))
+# Get names of key parameters to plot
+key_pars <- names(post)[grep("beta", names(post))] # Beta parameters
+key_pars2 <- c("alphadet", "k_bar") # Other parameters
+key_pars <- c(key_pars, key_pars2)
+
+true_vals <- c(betax, betam, betadet, alphadet, k_bar) # True values
+
+par(mfrow=c(ceiling(length(key_pars)/3),3))
+
+for(p in 1:length(key_pars)){
+  pr <- post[names(post) %in% key_pars[p]]
+  pr <- pr[[1]]
+  den <- density(pr)
+  PI95 <- HPDI(pr, prob = 0.95)
+  PI89 <- HPDI(pr, prob = 0.89)
+  PI80 <- HPDI(pr, prob = 0.80)
+  PI70 <- HPDI(pr, prob = 0.70)
+  PI60 <- HPDI(pr, prob = 0.60)
+  PI50 <- HPDI(pr, prob = 0.50)
+  PI_all <- rbind(PI95, PI89, PI80, PI70, PI60, PI50)
+  plot(den, main = paste(key_pars[p]))
+  for(i in 1:nrow(PI_all)){
+    l <- min(which(den$x >= PI_all[i,1]))
+    h <- max(which(den$x < PI_all[i,2]))
+    polygon(c(den$x[c(l, l:h, h)]),
+            c(0, den$y[l:h], 0),
+            col = col.alpha("black", 0.2), border=NA)
+  }
+  abline(v = true_vals[p], lty=2)
+}
 
 # Compare posterior distributions for psi with true values ####
 # Calculate posterior median and compatability intervals
 psi_mu <- apply(post$psi,2,median)
+#psi_mu <- apply(post$psi,2,chainmode) # Or use this code instead to show the posterior mode
+
 psi_PI95 <- apply(post$psi, 2, HPDI, prob=0.95)
 psi_PI89 <- apply(post$psi, 2, HPDI, prob=0.89)
 psi_PI80 <- apply(post$psi, 2, HPDI, prob=0.80)
