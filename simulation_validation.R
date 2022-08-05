@@ -179,7 +179,7 @@ for(p in 1:length(key_pars)){
     h <- max(which(den$x < PI_all[i,2]))
     polygon(c(den$x[c(l, l:h, h)]),
             c(0, den$y[l:h], 0),
-            col = col.alpha("black", 0.2), border=NA)
+            col = col.alpha("black", 0.15), border=NA)
   }
   abline(v = true_vals[p], lty=2)
 }
