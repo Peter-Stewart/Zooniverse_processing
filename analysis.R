@@ -48,11 +48,18 @@ opuntia_max_heights <- opuntia_data %>% select(Site_ID, Max_height) %>%
 opuntia_max_heights[is.na(opuntia_max_heights)] <- 0
 opuntia_max_heights <- opuntia_max_heights %>% filter(Site_ID %in% sitedays$Site)
 
+opuntia_median_heights <- opuntia_data %>% select(Site_ID, Max_height) %>%
+  group_by(Site_ID) %>%
+  summarise(Median_height_site = median(Max_height))
+opuntia_median_heights[is.na(opuntia_median_heights)] <- 0
+opuntia_median_heights <- opuntia_median_heights %>% filter(Site_ID %in% sitedays$Site)
+
 site_data <- merge(site_data, opuntia_max_heights, by="Site_ID")
+site_data <- merge(site_data, opuntia_median_heights, by="Site_ID")
 
 site_data$opuntia_total_cover <- (site_data$Opuntia_stricta_FOV + site_data$Opuntia_other_FOV +
                                     (3*site_data$Opuntia_stricta_area) + (3*site_data$Opuntia_other_area))/8
-site_data$opuntia_volume <- site_data$opuntia_total_cover * site_data$Max_height_site
+site_data$opuntia_volume <- site_data$opuntia_total_cover * site_data$Median_height_site
 
 # Count trees at each site
 tree_data <- tree_data %>% filter(!grepl("Fallen", Species)) %>% filter(!grepl("Dead", Species)) # Not counting fallen or dead trees
@@ -176,11 +183,6 @@ generate_distance_matrix <- function(df, rescale = FALSE, rescale_constant = 1, 
 
 dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
 
-
-hist(as.numeric(dmat), breaks = 100)
-
-
-
 # Run models #### 
 setwd("C:/temp/ch3_post")
 
@@ -192,10 +194,6 @@ key_sp <- c("baboon",
             "giraffe",
             "hyenaspotted")
 
-key_sp <- c("zebragrevys", "elephant","giraffe")
-
-key_sp <- "elephant"
-
 indexes <- list()
 for(i in 1:length(detmats)){
     if(names(detmats[i]) %in% key_sp){
@@ -206,19 +204,18 @@ for(i in 1:length(detmats)){
 indexes <- do.call(rbind, indexes)
 
 # List the models which will be run
-model_list <- c("direct_effects",
-                "total_effect_no_veg_path",
-                "total_effect_veg_path")
+#model_list <- c("direct_effects",
+#                "total_effect_no_veg_path",
+#                "total_effect_veg_path")
 
 model_list <- "direct_effects"
 
 # Parameters to control the models
 n_chains <- 4 # Number of chains
 n_cores <- 4 # Number of computer cores
-n_warmup <- 3000 # Number of warmup iterations
-n_iter <- 4000 # Total number of iterations (warmup + sample)
+n_warmup <- 3500 # Number of warmup iterations per chain
+n_iter <- 4500 # Total number of iterations (warmup + sample) per chain
   
-
 # Temporarily suppress warnings
 oldw <- getOption("warn")
 options(warn = -1)
