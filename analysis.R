@@ -3,6 +3,8 @@ library(rethinking)
 library(dplyr)
 library(tidyr)
 library(bayesplot)
+library(ggdist)
+
 
 # Load data
 setwd("C:/temp/Zooniverse/June22")
@@ -316,41 +318,104 @@ for(m in 1:length(model_list)){
 # Re-enable warnings
 options(warn = oldw)
 
+# Load posterior distributions
+setwd("C:/temp/ch3_post/direct_effects")
+
+post_baboon <- get(load("baboon_direct_effects_post.Rdata")); rm(post); gc()
+post_elephant <- get(load("elephant_direct_effects_post.Rdata")); rm(post); gc()
+post_vervetmonkey <- get(load("vervetmonkey_direct_effects_post.Rdata")); rm(post); gc()
+post_zebragrevys <- get(load("zebragrevys_direct_effects_post.Rdata")); rm(post); gc()
+post_impala <- get(load("impala_direct_effects_post.Rdata")); rm(post); gc()
+post_giraffe <- get(load("giraffe_direct_effects_post.Rdata")); rm(post); gc()
+post_hyenaspotted <- get(load("hyenaspotted_direct_effects_post.Rdata")); rm(post); gc()
+
+# Get posterior distributions for the estimands
+df_baboon <- as.data.frame(cbind(post_baboon$beta_opuntia, post_baboon$beta_fruit))
+df_elephant <- as.data.frame(cbind(post_elephant$beta_opuntia, post_elephant$beta_fruit))
+df_vervetmonkey <- as.data.frame(cbind(post_vervetmonkey$beta_opuntia, post_vervetmonkey$beta_fruit))
+df_zebragrevys <- as.data.frame(cbind(post_zebragrevys$beta_opuntia, post_zebragrevys$beta_fruit))
+df_impala <- as.data.frame(cbind(post_impala$beta_opuntia, post_impala$beta_fruit))
+df_giraffe <- as.data.frame(cbind(post_giraffe$beta_opuntia, post_giraffe$beta_fruit))
+df_hyenaspotted <- as.data.frame(cbind(post_hyenaspotted$beta_opuntia, post_hyenaspotted$beta_fruit))
+
+df_baboon$species <- as.factor("baboon")
+df_elephant$species <- as.factor("elephant")
+df_vervetmonkey$species <- as.factor("vervetmonkey")
+df_zebragrevys$species <- as.factor("zebragrevys")
+df_impala$species <- as.factor("impala")
+df_giraffe$species <- as.factor("giraffe")
+df_hyenaspotted$species <- as.factor("hyenaspotted")
+
+colnames(df_baboon) <- c("beta_opuntia", "beta_fruit", "species")
+colnames(df_elephant) <- c("beta_opuntia", "beta_fruit", "species")
+colnames(df_vervetmonkey) <- c("beta_opuntia", "beta_fruit", "species")
+colnames(df_zebragrevys) <- c("beta_opuntia", "beta_fruit", "species")
+colnames(df_impala) <- c("beta_opuntia", "beta_fruit", "species")
+colnames(df_giraffe) <- c("beta_opuntia", "beta_fruit", "species")
+colnames(df_hyenaspotted) <- c("beta_opuntia", "beta_fruit", "species")
+
+beta_df <- rbind(df_baboon, 
+                 df_elephant,
+                 df_vervetmonkey,
+                 df_zebragrevys,
+                 df_impala,
+                 df_giraffe,
+                 df_hyenaspotted)
+
+key_sp <- c("baboon",
+            "elephant",
+            "vervetmonkey",
+            "zebragrevys",
+            "impala",
+            "giraffe",
+            "hyenaspotted")
+
+species_names <- c("Olive baboon",
+                   "Elephant",
+                   "Vervet monkey",
+                   "Grevy's zebra",
+                   "Impala", 
+                   "Giraffe",
+                   "Spotted hyena")
+
+par(mfrow=c(ceiling(length(key_sp)*2/4),4), mar=c(3, 4, 2, 2))
+for(i in 1:length(key_sp)){
+  for(j in 1:2){
+    pr <- beta_df %>% filter(species == key_sp[i])
+    pr <- pr[,j]
+    
+    den <- density(pr)
+    
+    PI95 <- HPDI(pr, prob = 0.95)
+    PI89 <- HPDI(pr, prob = 0.89)
+    PI80 <- HPDI(pr, prob = 0.80)
+    PI70 <- HPDI(pr, prob = 0.70)
+    PI60 <- HPDI(pr, prob = 0.60)
+    PI50 <- HPDI(pr, prob = 0.50)
+    PI_all <- rbind(PI95, PI89, PI80, PI70, PI60, PI50)
+    
+    if(j == 1){
+      ttl <- bquote(.(species_names[i]) ~ beta[OPUNTIA])
+    }else{
+      ttl <- bquote(.(species_names[i]) ~ beta[FRUIT])
+    }
+    
+    
+    plot(den, main = ttl, xlab="")
+    
+    for(k in 1:nrow(PI_all)){
+      l <- min(which(den$x >= PI_all[k,1]))
+      h <- max(which(den$x < PI_all[k,2]))
+      polygon(c(den$x[c(l, l:h, h)]),
+              c(0, den$y[l:h], 0),
+              col = col.alpha("black", 0.15), border=NA)
+    }
+    abline(v = 0, lty=1)
+  }
+}
 
 
-
-# Load posterior distribution 
-post <- get(load("zebragrevys_direct_effects_post_fruitbin.Rdata"))
-post2 <- get(load("zebragrevys_direct_effects_post.Rdata"))
-
-par(mfrow=c(1,2))
-
-
-post <- get(load("zebragrevys_direct_effects_post_fruitbin.Rdata"))
-post <- get(load("elephant_direct_effects_post.Rdata"))
-
-setwd("C:/temp/ch3_post/total_effect_no_veg_path")
-post <- get(load("elephant_total_effect_no_veg_path_post.Rdata"))
-post <- get(load("zebragrevys_total_effect_no_veg_path_post.Rdata"))
-post <- get(load("giraffe_total_effect_no_veg_path_post.Rdata"))
-
-dens(post$beta_opuntia)
-
-library(ggdist)
-df1 <- as.data.frame(post1$beta_opuntia)
-df2 <- as.data.frame(post2$beta_opuntia)
-df3 <- as.data.frame(post3$beta_opuntia)
-
-df1$species <- as.factor("elephant")
-colnames(df1) <- c("beta","species")
-df2$species <- as.factor("zebragrevys")
-colnames(df2) <- c("beta","species")
-df3$species <- as.factor("giraffe")
-colnames(df3) <- c("beta","species")
-
-df <- rbind(df1, df2, df3)
-
-p1 <- ggplot(df, aes(y = species, x = beta, slab_fill = species, slab_color = species)) +
+p1 <- ggplot(beta_df, aes(y = species, x = beta_fruit, slab_fill = species, slab_color = species)) +
   stat_dotsinterval() + 
   theme_classic() 
 p1
