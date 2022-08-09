@@ -213,8 +213,8 @@ model_list <- "direct_effects"
 # Parameters to control the models
 n_chains <- 4 # Number of chains
 n_cores <- 4 # Number of computer cores
-n_warmup <- 3500 # Number of warmup iterations per chain
-n_iter <- 4500 # Total number of iterations (warmup + sample) per chain
+n_warmup <- 3000 # Number of warmup iterations per chain
+n_iter <- 4000 # Total number of iterations (warmup + sample) per chain
   
 # Temporarily suppress warnings
 oldw <- getOption("warn")
@@ -283,7 +283,8 @@ for(m in 1:length(model_list)){
   
   # Save traceplots for key parameters
   png(file = paste0(key_sp[sp],"_",model_list[m],"_traceplots.png"), width = 804, height = 500, units = "px")
-  rstan::traceplot(m1_nc, pars=c(p, p2), inc_warmup = TRUE)
+  p1 <- rstan::traceplot(m1_nc, pars=c(p, p2), inc_warmup = TRUE)
+  print(p1)
   dev.off()
   
   # Save trankplots for key parameters
@@ -293,15 +294,18 @@ for(m in 1:length(model_list)){
   
   # Save hist of centred marginal energy distribution and first-differenced distribution overlaid
   color_scheme_set("darkgray") # Set colour scheme for Bayesplot 
-  np <- nuts_params(mtest) # Extract NUTS parameters
+  np <- nuts_params(m1_nc) # Extract NUTS parameters
   png(file = paste0(key_sp[sp],"_",model_list[m],"_HMC_energy.png"), width = 804, height = 500, units = "px")
-  mcmc_nuts_energy(np)
+  p2 <- mcmc_nuts_energy(np)
+  print(p2)
   dev.off()
   
   
   # Clean up between iterations
   rm(post)
   rm(np)
+  rm(p1)
+  rm(p2)
   rm(m1_nc)
   rm(dlist)
   rm(dd)
