@@ -1,4 +1,4 @@
-# Load packages
+# Load packages ####
 library(rethinking)
 library(dplyr)
 library(tidyr)
@@ -6,8 +6,7 @@ library(bayesplot)
 library(ggdist)
 library(viridis)
 
-
-# Load data
+# Load data ####
 setwd("C:/temp/Zooniverse/June22")
 sitedays <- get(load("sitedays.Rdata"))
 detmats <- get(load("detmats.Rdata"))
@@ -27,6 +26,7 @@ df_mu_f <- get(load("grid_square_fruiting.Rdata"))
 df_mu_n <- get(load("grid_square_non_fruiting.Rdata"))
 df_mu_t <- get(load("grid_square_total.Rdata"))
 
+# Process data into required format ####
 # Merge distance to river/road into the main sites dataframe
 dist_river <- dist_river %>% select(Site_ID, HubDist) %>% rename(dist_river = HubDist)
 dist_road <- dist_road %>% select(Site_ID, HubDist) %>% rename(dist_road = HubDist)
@@ -105,8 +105,14 @@ colnames(livestock_proportion) <- c("livestock_proportion", "Site_ID")
 site_data <- merge(site_data, livestock_proportion, by="Site_ID")
 
 # Merge in grid square-level Opuntia densities
+colnames(df_mu_t) <- c("grid_square", "volume_total")
+colnames(df_mu_f) <- c("grid_square", "volume_fruiting")
+colnames(df_mu_n) <- c("grid_square", "volume_nonfruiting")
+
 site_data$grid_square <- as.factor(site_data$Grid_square)
 site_data <- merge(site_data, df_mu_t, by="grid_square", all.x = TRUE)
+site_data <- merge(site_data, df_mu_f, by="grid_square", all.x = TRUE)
+site_data <- merge(site_data, df_mu_n, by="grid_square", all.x = TRUE)
 
 # Ensure that site_data is ordered by site_ID
 site_data <- site_data[order(site_data$Site_ID),]
@@ -186,7 +192,7 @@ generate_distance_matrix <- function(df, rescale = FALSE, rescale_constant = 1, 
 
 dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
 
-# Run models #### 
+# Run models - fine-scale #### 
 setwd("C:/temp/ch3_post")
 
 key_sp <- c("baboon",
@@ -322,7 +328,144 @@ for(m in 1:length(model_list)){
 # Re-enable warnings
 options(warn = oldw)
 
-# Load posterior samples
+# Run models - broad-scale ####
+setwd("C:/temp/ch3_post/grid_square")
+
+key_sp <- c("baboon",
+            "elephant",
+            "vervetmonkey",
+            "zebragrevys",
+            "impala",
+            "giraffe",
+            "hyenaspotted")
+
+indexes <- list()
+for(i in 1:length(detmats)){
+  if(names(detmats[i]) %in% key_sp){
+    indexes[i] <- i
+  }else{
+    indexes[i] <- NULL}
+}
+indexes <- do.call(rbind, indexes)
+
+# List the models which will be run
+#model_list <- c("direct_effects",
+#                "total_effect_no_veg_path",
+#                "total_effect_veg_path")
+
+model_list <- "direct_effects"
+#model_list <- "total_effect_no_veg_path"
+#model_list <- "total_effect_veg_path"
+
+
+# Parameters to control the models
+n_chains <- 4 # Number of chains
+n_cores <- 4 # Number of computer cores
+n_warmup <- 3000 # Number of warmup iterations per chain
+n_iter <- 4000 # Total number of iterations (warmup + sample) per chain
+
+# Temporarily suppress warnings
+oldw <- getOption("warn")
+options(warn = -1)
+
+# For each model 
+# loop through all key species, run model, save results and diagnostics
+for(m in 1:length(model_list)){
+  
+  setwd(paste0("C:/temp/ch3_post/grid_square/",model_list[m]))
+  
+  for(sp in 1:length(key_sp)){
+    
+    # Select data for the species
+    dd <- detmats[indexes[sp,]]
+    dd <- dd[[1]]
+    dd <- as.matrix(dd[,-1])
+    dd[is.na(dd)] <- -9999
+    mode(dd) <- "integer"
+    
+    # Prepare data list for Stan
+    dlist <- list(
+      # Number of sites and visits
+      nsites = as.integer(nrow(dmat)),
+      N_maxvisits = as.integer(max(sitedays$Days)),
+      V = as.integer(sitedays$Days),
+      # Observed data
+      y = dd,
+      # Occupancy covariates
+      opuntia_vol = standardize(site_data$volume_total),
+      fruit = standardize(site_data$volume_fruiting),
+      d_water = standardize(site_data$dist_river),
+      d_road = standardize(site_data$dist_road),
+      livestock = standardize(site_data$livestock_proportion),
+      grass = standardize(site_data$grass_total),
+      forb = standardize(site_data$forb_total),
+      shrub = standardize(site_data$shrub_total),
+      succulent = standardize(site_data$succulent_total),
+      tree = standardize(site_data$n_trees),
+      # Detection covariates
+      
+      # Distance matrix
+      dmat = dmat
+    )
+    
+    # Run the model
+    m1_nc <- cstan(file = paste0("C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/",model_list[m],".stan"),
+                   data = dlist,
+                   chains = n_chains,
+                   cores = n_cores,
+                   warmup = n_warmup,
+                   iter = n_iter)
+    
+    # Save diagnostic plots
+    png(file = paste0(key_sp[sp],"_",model_list[m],"_diagnostics.png"), width = 804, height = 500, units = "px")
+    dashboard(m1_nc)
+    dev.off()
+    
+    # Save posterior samples
+    post <- extract.samples(m1_nc)
+    save(post, file = paste0(key_sp[sp],"_",model_list[m],"_post.Rdata"))
+    
+    # Parameters to save in traceplots and trankplots
+    p <- names(post)[grep("beta", names(post))] # Beta parameters
+    p2 <- c("alphadet", "etasq", "rhosq", "k_bar") # Other parameters
+    
+    # Save traceplots for key parameters
+    png(file = paste0(key_sp[sp],"_",model_list[m],"_traceplots.png"), width = 804, height = 500, units = "px")
+    p1 <- rstan::traceplot(m1_nc, pars=c(p, p2), inc_warmup = TRUE)
+    print(p1)
+    dev.off()
+    
+    # Save trankplots for key parameters
+    png(file = paste0(key_sp[sp],"_",model_list[m],"_trankplots.png"), width = 804, height = 500, units = "px")
+    trankplot(m1_nc, pars=c(p, p2))
+    dev.off()
+    
+    # Save hist of centred marginal energy distribution and first-differenced distribution overlaid
+    color_scheme_set("darkgray") # Set colour scheme for Bayesplot 
+    np <- nuts_params(m1_nc) # Extract NUTS parameters
+    png(file = paste0(key_sp[sp],"_",model_list[m],"_HMC_energy.png"), width = 804, height = 500, units = "px")
+    p2 <- mcmc_nuts_energy(np)
+    print(p2)
+    dev.off()
+    
+    
+    # Clean up between iterations
+    rm(post)
+    rm(np)
+    rm(p1)
+    rm(p2)
+    rm(m1_nc)
+    rm(dlist)
+    rm(dd)
+    gc()
+    
+  }
+}
+# Re-enable warnings
+options(warn = oldw)
+
+
+# Marginal effect plots ####
 
 # Direct effects ####
 setwd("C:/temp/ch3_post/direct_effects")
