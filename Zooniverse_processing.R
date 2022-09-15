@@ -4,14 +4,14 @@ library(tidyr)
 library(lubridate)
 
 # Load data ####
-setwd("C:/temp/Zooniverse/June22")
+setwd("C:/temp/Zooniverse/Sep22")
 
 workflows <- read.csv("prickly-pear-project-kenya-workflows.csv", header = TRUE)
 subjects <- read.csv("prickly-pear-project-kenya-subjects.csv")
-subjects <- subjects %>% filter(subject_set_id == 99701)
+subjects <- subjects %>% filter(subject_set_id == 99701 | subject_set_id == 105787)
 #classifications <- read.csv("prickly-pear-project-kenya-classifications.csv", header = TRUE)
 
-setwd("C:/temp/Zooniverse/June22/extracted")
+setwd("C:/temp/Zooniverse/Sep22/extracted")
 survey_extractions <- read.csv("survey_extractor_extractions.csv")
 
 # Process survey extractions ####
@@ -36,8 +36,8 @@ survey_extractions$count_exact <- ifelse(survey_extractions$count > 10, FALSE, T
 
 # Add index variable for "interacting with cactus"
 survey_extractions$interacting <- as.integer(rep(NA, nrow(survey_extractions)))
-survey_extractions$interacting[which(survey_extractions$data.answers_doyouseeanyindividualsinteractingwiththecactus.yes==1)] = 1
 survey_extractions$interacting[which(survey_extractions$data.answers_doyouseeanyindividualsinteractingwiththecactus.no==1)] = 0
+survey_extractions$interacting[which(survey_extractions$data.answers_doyouseeanyindividualsinteractingwiththecactus.yes==1)] = 1
 
 # Merge classification data with subject set data
 survey_extractions <- survey_extractions %>% select(classification_id, 
@@ -63,7 +63,7 @@ user_classifications <- merge(subjects_sub, survey_extractions, by="subject_id",
 
 # Remove subjects with no metadata / classification ID, and those from the wrong subject sets
 user_classifications <- user_classifications %>% filter(metadata != "NA") %>% filter(classification_id != "NA")
-user_classifications <- user_classifications %>% filter(subject_set_id == 99701)
+user_classifications <- user_classifications %>% filter(subject_set_id == 99701 | subject_set_id == 105787)
 
 # Rename data.choice to "species"
 user_classifications$species <- as.factor(user_classifications$data.choice)
@@ -185,6 +185,7 @@ subjects_sub$site <- as.factor(subjects_sub$site)
 
 subjects_sub$File <- gsub('"','',subjects_sub$File)
 subjects_sub$File <- gsub('.jpg','',subjects_sub$File)
+subjects_sub$File <- gsub('.JPG','',subjects_sub$File)
 
 # Split date into day, month, year columns (keep original)
 subjects_sub <- subjects_sub %>% separate(Date, into = c("Day", "Month", "Year"), sep = "-", remove = FALSE, convert = FALSE)
@@ -251,7 +252,7 @@ user_classifications <- rbind(errors, correct)
 # Correct these using offset calculated from known deployment time
 
 # Site 35
-rm(errors); rm(correct)''
+rm(errors); rm(correct)
 errors <- subjects_sub %>% filter(site=="Site_35")
 correct <- subjects_sub %>% filter(site!="Site_35")
 
@@ -344,6 +345,32 @@ consensus_classifications <- consensus_classifications %>% select(
 
 # AT THIS STAGE MERGE IN EXPERT CLASSIFICATIONS IF I MAKE THOSE EVENTUALLY
 
+# Number of times each image has been classified as containing interaction with cactus
+interactions <- user_classifications %>% filter(interacting == 1) %>% 
+  group_by(subject_id) %>% 
+  count(interacting, name = "votes") %>%
+  select(-interacting)
+interactions <- as.data.frame(interactions)
+
+interactions_threshold <- 8 # Theshold for number of times "interacting with cactus" is selected
+interactions <- interactions %>% filter(votes >= interactions_threshold)
+
+interactions <- merge(interactions, subjects_sub, all.x =  TRUE)
+
+interactions_filelist <- interactions
+interactions_filelist$subfolder <- gsub("_IMG.*","",interactions_filelist$File)
+interactions_filelist$subfolder <- gsub("_RCNX.*","",interactions_filelist$subfolder)
+interactions_filelist$path <- paste0(interactions_filelist$site,"/",
+                                     interactions_filelist$subfolder,"/",
+                                     interactions_filelist$File)
+interactions_filelist$path <- ifelse(grepl("RCNX", interactions_filelist$path, fixed = TRUE) == TRUE,
+                                     paste0(interactions_filelist$path, ".JPG"),
+                                     paste0(interactions_filelist$path, ".jpg"))
+interactions_filelist <- interactions_filelist %>% select(path)
+
+setwd("C:/temp/Zooniverse/June22")
+write.table(interactions_filelist, file = "interactions_filelist.txt",
+            sep = "\t", col.names = FALSE, row.names = FALSE)
 
 # Generate detection matrix for each species (number of detections per hour, can binarise if needed) ####
 # Hours and days for all sites - will need these so that hours/days with no detections can be kept as zero
@@ -364,9 +391,9 @@ user_classifications <- user_classifications %>% unite(DateNum, c("Year", "Month
 hrs <- as.data.frame(0:23); colnames(hrs) <- "hr"
 sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 
-#sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
-#  filter(!is.na(Days)) %>%
-#  uncount(Days)
+sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
+  filter(!is.na(Days)) %>%
+  uncount(Days)
   
 
 # Each row is one site
@@ -404,8 +431,9 @@ source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_fun
 # Create (binary) detection matrix for each species
 sp_list <- unique(levels(consensus_classifications$species))
 
-detmats <- list()
+detmats2 <- list()
 for(i in 1:length(sp_list)){
-  detmats[[i]] <- generate_detection_matrix_hours(sp=sp_list[i], binary=TRUE)
+  detmats2[[i]] <- generate_detection_matrix_hours(sp=sp_list[i], binary=FALSE)
 }
-names(detmats) <- sp_list
+names(detmats2) <- sp_list
+
