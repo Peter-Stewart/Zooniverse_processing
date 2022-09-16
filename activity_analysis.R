@@ -14,44 +14,224 @@ for(i in 1:length(high_sites)){
   high_sitenames[i,1] <- paste0(site_prefix, high_sites[i])
 }
 
-# Now loop through all key species and run model 
-key_sp <- c("baboon",
-            "elephant",
-            "vervetmonkey",
-            "zebragrevys",
-            "impala",
-            "giraffe",
-            "hyenaspotted")
-
-results_list_m1 <- list()
-results_list_m2 <- list()
-
-for(sp in 1:length(key_sp)){
-  df1 <- consensus_classifications %>% filter(species == key_sp[sp]) %>% filter(site %in% high_sitenames)
-  df2 <- consensus_classifications %>% filter(species == key_sp[sp]) %>% filter(site %notin% high_sitenames)
-  
-  times1 <- df1$DateTimeLub
-  times2 <- df2$DateTimeLub
-  
-  t_rad1 <- gettime(x = times1,
+# Baboon 
+df1 <- consensus_classifications %>% filter(species == "baboon") %>% filter(site %in% high_sitenames)
+df2 <- consensus_classifications %>% filter(species == "baboon") %>% filter(site %notin% high_sitenames)
+times1 <- df1$DateTimeLub
+times2 <- df2$DateTimeLub
+t_rad1 <- gettime(x = times1,
                     scale = "radian")
-  t_rad2 <- gettime(x = times2,
+t_rad2 <- gettime(x = times2,
                     scale = "radian")
-  
-  m1 <- fitact(dat = t_rad1,
+m1 <- fitact(dat = t_rad1,
                sample = "data",
                reps = 1000,
-               show = TRUE
-  )
-  m2 <- fitact(dat = t_rad2,
+               show = TRUE)
+m2 <- fitact(dat = t_rad2,
                sample = "data",
                reps = 1000,
-               show = TRUE
-  )
-  results_list_m1[[i]] <- m1
-  results_list_m2[[i]] <- m2
-}
-names(results_list_m1) <- key_sp
-names(results_list_m2) <- key_sp
+               show = TRUE)
 
-# Plot activity kernel for each species and make 1 plot to compare overall activity levels
+# Elephant 
+df1 <- consensus_classifications %>% filter(species == "elephant") %>% filter(site %in% high_sitenames)
+df2 <- consensus_classifications %>% filter(species == "elephant") %>% filter(site %notin% high_sitenames)
+times1 <- df1$DateTimeLub
+times2 <- df2$DateTimeLub
+t_rad1 <- gettime(x = times1,
+                  scale = "radian")
+t_rad2 <- gettime(x = times2,
+                  scale = "radian")
+m3 <- fitact(dat = t_rad1,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+m4 <- fitact(dat = t_rad2,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+
+# Vervet monkey
+df1 <- consensus_classifications %>% filter(species == "vervetmonkey") %>% filter(site %in% high_sitenames)
+df2 <- consensus_classifications %>% filter(species == "vervetmonkey") %>% filter(site %notin% high_sitenames)
+times1 <- df1$DateTimeLub
+times2 <- df2$DateTimeLub
+t_rad1 <- gettime(x = times1,
+                  scale = "radian")
+t_rad2 <- gettime(x = times2,
+                  scale = "radian")
+m5 <- fitact(dat = t_rad1,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+m6 <- fitact(dat = t_rad2,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+
+# Grevy's zebra
+df1 <- consensus_classifications %>% filter(species == "zebragrevys") %>% filter(site %in% high_sitenames)
+df2 <- consensus_classifications %>% filter(species == "zebragrevys") %>% filter(site %notin% high_sitenames)
+times1 <- df1$DateTimeLub
+times2 <- df2$DateTimeLub
+t_rad1 <- gettime(x = times1,
+                  scale = "radian")
+t_rad2 <- gettime(x = times2,
+                  scale = "radian")
+m7 <- fitact(dat = t_rad1,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+m8 <- fitact(dat = t_rad2,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+
+# Impala
+df1 <- consensus_classifications %>% filter(species == "impala") %>% filter(site %in% high_sitenames)
+df2 <- consensus_classifications %>% filter(species == "impala") %>% filter(site %notin% high_sitenames)
+times1 <- df1$DateTimeLub
+times2 <- df2$DateTimeLub
+t_rad1 <- gettime(x = times1,
+                  scale = "radian")
+t_rad2 <- gettime(x = times2,
+                  scale = "radian")
+m9 <- fitact(dat = t_rad1,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+m10 <- fitact(dat = t_rad2,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+
+# Giraffe
+df1 <- consensus_classifications %>% filter(species == "giraffe") %>% filter(site %in% high_sitenames)
+df2 <- consensus_classifications %>% filter(species == "giraffe") %>% filter(site %notin% high_sitenames)
+times1 <- df1$DateTimeLub
+times2 <- df2$DateTimeLub
+t_rad1 <- gettime(x = times1,
+                  scale = "radian")
+t_rad2 <- gettime(x = times2,
+                  scale = "radian")
+m11 <- fitact(dat = t_rad1,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+m12 <- fitact(dat = t_rad2,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+
+
+# Spotted hyena
+df1 <- consensus_classifications %>% filter(species == "hyenaspotted") %>% filter(site %in% high_sitenames)
+df2 <- consensus_classifications %>% filter(species == "hyenaspotted") %>% filter(site %notin% high_sitenames)
+times1 <- df1$DateTimeLub
+times2 <- df2$DateTimeLub
+t_rad1 <- gettime(x = times1,
+                  scale = "radian")
+t_rad2 <- gettime(x = times2,
+                  scale = "radian")
+m13 <- fitact(dat = t_rad1,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+m14 <- fitact(dat = t_rad2,
+             sample = "data",
+             reps = 1000,
+             show = TRUE)
+
+
+# Plots
+# Activity comparison
+c1 <- compareAct(c(m1,m2))
+c2 <- compareAct(c(m3,m4))
+c3 <- compareAct(c(m5,m6))
+c4 <- compareAct(c(m7,m8))
+c5 <- compareAct(c(m9,m10))
+c6 <- compareAct(c(m11,m12))
+c7 <- compareAct(c(m13,m14))
+
+plot(NULL, xlim = c(1,7), ylim = c(-0.5,0.5), xlab = "Species", ylab = "Change in activity", xaxt="n")
+axis(1, 
+     at = 1:7,
+     labels = c("Olive baboon","Elephant", "Vervet monkey", "Grevy's zebra", "Impala", "Giraffe", "Spotted hyena"))
+points(x = 1, y = c1[1,1], pch=16); lines(x = c(1,1), y = c(c1[1,1]+c1[1,2],c1[1,1]-c1[1,2]))
+points(x = 2, y = c2[1,1], pch=16); lines(x = c(2,2), y = c(c2[1,1]+c2[1,2],c2[1,1]-c2[1,2]))
+points(x = 3, y = c3[1,1], pch=16); lines(x = c(3,3), y = c(c3[1,1]+c3[1,2],c3[1,1]-c3[1,2]))
+points(x = 4, y = c4[1,1], pch=16); lines(x = c(4,4), y = c(c4[1,1]+c4[1,2],c4[1,1]-c4[1,2]))
+points(x = 5, y = c5[1,1], pch=16); lines(x = c(5,5), y = c(c5[1,1]+c5[1,2],c5[1,1]-c5[1,2]))
+points(x = 6, y = c6[1,1], pch=16); lines(x = c(6,6), y = c(c6[1,1]+c6[1,2],c6[1,1]-c6[1,2]))
+points(x = 7, y = c7[1,1], pch=16); lines(x = c(7,7), y = c(c7[1,1]+c7[1,2],c7[1,1]-c7[1,2]))
+abline(h=0, lty=2)
+
+# Activity plots for each species
+# Baboon
+clean_activity_plot(m1, 
+                    species_title = "Olive baboon",
+                    colour = "darkgreen",
+                    alpha = 0.5)
+clean_activity_plot(m2, 
+                    colour = "lightgreen",
+                    alpha = 0.5, 
+                    add = TRUE)
+
+# Elephant 
+clean_activity_plot(m3, 
+                    species_title = "Elephant",
+                    colour = "darkgreen",
+                    alpha = 0.5)
+clean_activity_plot(m4, 
+                    colour = "lightgreen",
+                    alpha = 0.5, 
+                    add = TRUE)
+
+# Vervet monkey 
+clean_activity_plot(m5, 
+                    species_title = "Vervet monkey",
+                    colour = "darkgreen",
+                    alpha = 0.5)
+clean_activity_plot(m6, 
+                    colour = "lightgreen",
+                    alpha = 0.5, 
+                    add = TRUE)
+
+# Grevy's zebra
+clean_activity_plot(m7, 
+                    species_title = "Grevy's zebra",
+                    colour = "darkgreen",
+                    alpha = 0.5)
+clean_activity_plot(m8, 
+                    colour = "lightgreen",
+                    alpha = 0.5, 
+                    add = TRUE)
+
+# Impala
+clean_activity_plot(m9, 
+                    species_title = "Impala",
+                    colour = "darkgreen",
+                    alpha = 0.5)
+clean_activity_plot(m10, 
+                    colour = "lightgreen",
+                    alpha = 0.5, 
+                    add = TRUE)
+
+# Giraffe
+clean_activity_plot(m11, 
+                    species_title = "Giraffe",
+                    colour = "darkgreen",
+                    alpha = 0.5)
+clean_activity_plot(m12, 
+                    colour = "lightgreen",
+                    alpha = 0.5, 
+                    add = TRUE)
+
+# Spotted hyena
+clean_activity_plot(m13, 
+                    species_title = "Spotted hyena",
+                    colour = "darkgreen",
+                    alpha = 0.5)
+clean_activity_plot(m14, 
+                    colour = "lightgreen",
+                    alpha = 0.5, 
+                    add = TRUE)
