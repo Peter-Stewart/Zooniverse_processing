@@ -21,7 +21,7 @@ data{
 }
 parameters{
   real<lower=0> sigma;
-  real betax;
+  real beta_fruit;
   real k_bar;
   real omega_bar;
   real gamma;
@@ -38,7 +38,7 @@ parameters{
 model{
 // Priors
   sigma ~ exponential(1);
-  betax ~ normal(0,1);
+  beta_fruit ~ normal(0,1);
   k_bar ~ normal(0,1);
   omega_bar ~ normal(0,1);
   gamma ~ normal(0,1);
@@ -74,7 +74,7 @@ model{
       1 ~ bernoulli(inv_logit(omega_bar + k2[i] + gamma*x[i]));
     } else {
       0 ~ bernoulli(inv_logit(omega_bar + k2[i] + gamma*x[i]));
-      y_obs[i] ~ normal(k_bar + k[i] + betax*x[i], sigma) T[0.00000001, ];
+      y_obs[i] ~ normal(k_bar + k[i] + beta_fruit*x[i], sigma) T[0.00000001, ];
     }
   }
 }
