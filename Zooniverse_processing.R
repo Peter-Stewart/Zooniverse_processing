@@ -208,9 +208,10 @@ subjects_sub$DateTimeLub <- as_datetime(subjects_sub$DateTimeNum)
 # Dates/times are wrong for three sites where camera 15 was deployed, due to a fault with the camera
 # Correct these using offset calculated from known deployment time
 
-# Site 35
-errors <- user_classifications %>% filter(site=="Site_35")
-correct <- user_classifications %>% filter(site!="Site_35")
+# Site 35 parts 1 and 2 (part 3 used cam 6 which is ok)
+rm(errors); rm(correct)
+errors <- user_classifications %>% filter(grepl("Site_35_part1|Site_35_part2",File))
+correct <- user_classifications %>% filter(!grepl("Site_35_part1|Site_35_part2",File))
 
 errors$DateTimeLub <- errors$DateTimeLub + 34443510 
 errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
@@ -266,10 +267,10 @@ user_classifications <- rbind(errors, correct)
 # Dates/times are wrong for three sites where camera 15 was deployed, due to a fault with the camera
 # Correct these using offset calculated from known deployment time
 
-# Site 35
+# Site 35 parts 1 and 2 (part 3 used cam 6 which is ok)
 rm(errors); rm(correct)
-errors <- subjects_sub %>% filter(site=="Site_35")
-correct <- subjects_sub %>% filter(site!="Site_35")
+errors <- subjects_sub %>% filter(grepl("Site_35_part1|Site_35_part2",File))
+correct <- subjects_sub %>% filter(!grepl("Site_35_part1|Site_35_part2",File))
 
 errors$DateTimeLub <- errors$DateTimeLub + 34443510 
 errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
@@ -466,3 +467,4 @@ for(i in 1:length(sp_list)){
   detmats2[[i]] <- generate_detection_matrix_hours(sp=sp_list[i], binary=FALSE)
 }
 names(detmats2) <- sp_list
+
