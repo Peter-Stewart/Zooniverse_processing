@@ -4,7 +4,7 @@ library(tidyr)
 library(lubridate)
 
 # Load data ####
-setwd("C:/temp/Zooniverse/Sep22")
+setwd("C:/temp/Zooniverse/Oct22")
 
 workflows <- read.csv("prickly-pear-project-kenya-workflows.csv", header = TRUE)
 subjects <- read.csv("prickly-pear-project-kenya-subjects.csv")
@@ -231,16 +231,31 @@ errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
 
 user_classifications <- rbind(errors, correct)
 
-# Dates are wrong for site 86
+# Dates are wrong for site 86 part 1
 # timestamp = 2020-02-10 13:08:00
 # true time = 2021-03-15 13:09:00
 # offset = 34,473,660
 rm(errors); rm(correct)
 
-errors <- user_classifications %>% filter(site=="Site_86")
-correct <- user_classifications %>% filter(site!="Site_86")
+errors <- user_classifications %>% filter(grepl("Site_86_part1",File))
+correct <- user_classifications %>% filter(!grepl("Site_86_part1",File))
 
 errors$DateTimeLub <- errors$DateTimeLub + 34473660 
+errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
+
+user_classifications <- rbind(errors, correct)
+
+# Dates are wrong for site 86 parts 2 to 3
+# timestamp = 2020-01-01 12:01:29
+# true time = 2021-03-19 11:55:00
+# offset = 38,274,811
+
+rm(errors); rm(correct)
+
+errors <- user_classifications %>% filter(grepl("Site_86_part2|Site_86_part3",File))
+correct <- user_classifications %>% filter(!grepl("Site_86_part2|Site_86_part3",File))
+
+errors$DateTimeLub <- errors$DateTimeLub + 38274811 
 errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
 
 user_classifications <- rbind(errors, correct)
@@ -275,16 +290,31 @@ errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
 
 subjects_sub <- rbind(errors, correct)
 
-# Dates are wrong for site 86
+# Dates are wrong for site 86 part 1
 # timestamp = 2020-02-10 13:08:00
 # true time = 2021-03-15 13:09:00
 # offset = 34,473,660
 rm(errors); rm(correct)
 
-errors <- subjects_sub %>% filter(site=="Site_86")
-correct <- subjects_sub %>% filter(site!="Site_86")
+errors <- subjects_sub %>% filter(grepl("Site_86_part1",File))
+correct <- subjects_sub %>% filter(!grepl("Site_86_part1",File))
 
 errors$DateTimeLub <- errors$DateTimeLub + 34473660 
+errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
+
+subjects_sub <- rbind(errors, correct)
+
+# Dates are wrong for site 86 parts 2 to 3
+# timestamp = 2020-01-01 12:01:29
+# true time = 2021-03-19 11:55:00
+# offset = 38,274,811
+
+rm(errors); rm(correct)
+
+errors <- subjects_sub %>% filter(grepl("Site_86_part2|Site_86_part3",File))
+correct <- subjects_sub %>% filter(!grepl("Site_86_part2|Site_86_part3",File))
+
+errors$DateTimeLub <- errors$DateTimeLub + 38274811 
 errors$DateTimeLub <- as_datetime(errors$DateTimeLub)
 
 subjects_sub <- rbind(errors, correct)
@@ -368,9 +398,9 @@ interactions_filelist$path <- ifelse(grepl("RCNX", interactions_filelist$path, f
                                      paste0(interactions_filelist$path, ".jpg"))
 interactions_filelist <- interactions_filelist %>% select(path)
 
-setwd("C:/temp/Zooniverse/June22")
-write.table(interactions_filelist, file = "interactions_filelist.txt",
-            sep = "\t", col.names = FALSE, row.names = FALSE)
+#setwd("C:/temp/Zooniverse/June22")
+#write.table(interactions_filelist, file = "interactions_filelist.txt",
+#            sep = "\t", col.names = FALSE, row.names = FALSE)
 
 # Generate detection matrix for each species (number of detections per hour, can binarise if needed) ####
 # Hours and days for all sites - will need these so that hours/days with no detections can be kept as zero
@@ -436,4 +466,3 @@ for(i in 1:length(sp_list)){
   detmats2[[i]] <- generate_detection_matrix_hours(sp=sp_list[i], binary=FALSE)
 }
 names(detmats2) <- sp_list
-
