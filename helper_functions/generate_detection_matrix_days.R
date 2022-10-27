@@ -45,7 +45,7 @@ generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers
       sites_k$k[i] <- 1L
   }
   sites_k$k_date <- sites_k$Deploy_date_lub + (sites_k$k - 1)
-
+  
   # Merge sites_k with consensus classifications so we know which visit (day) k each detection was on
   templist <- list()
   for(i in 1:length(unique(sites_k$Site))){
@@ -58,7 +58,7 @@ generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers
     templist[[i]] <- temp_df2
   }
   df <- do.call(rbind, templist)
-
+  
   # Group by site and k
   df <- df %>% group_by(site, k) %>% summarise(n = sum(indicator), .groups = "keep")
   
@@ -84,14 +84,16 @@ generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers
   # Add columns up to max value of k (columns missing when sp not seen on last visits) 
   # Also adds columns for visits in which no sites saw the species
   col_list <- list()
-  for(i in 1:max(sites_k$k)){
+  max_k <- sitedays %>% group_by(Site) %>% summarise(tot_k = sum(Days))
+  
+  for(i in 1:max(max_k$tot_k)){
     temp <- rep(NA, nrow(df))
     temp <- as.data.frame(temp)
     colnames(temp) <- ifelse(i < 10, paste0("V","0",i), paste0("V",i))
     if(!colnames(temp) %in% colnames(df)){
       col_list[[i]] <- temp
-      }
     }
+  }
   col_list<-col_list[!sapply(col_list,is.null)]
   col_df <- do.call(cbind, col_list)
   df <- cbind(df, col_df)
@@ -102,8 +104,8 @@ generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers
   
   # Then fill from right with NA for k_max - k[i] cells
   for(i in 1:nrow(df)){
-    for(k in 1:max(sitedays$Days) + 1L){
-      if(k <= sitedays$Days[i] + 1L)
+    for(k in 1:max(max_k$tot_k) + 1L){
+      if(k <= max_k$tot_k[i] + 1L)
         df[i, k] <- df[i, k]
       else
         df[i, k] <- NA
