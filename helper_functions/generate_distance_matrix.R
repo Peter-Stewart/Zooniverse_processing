@@ -1,5 +1,4 @@
 # Generates distance matrix from dataframe with columns that contain "lat" or "long"
-
 generate_distance_matrix <- function(df, rescale = FALSE, rescale_constant = 1, sites_as_days = FALSE, jitter = TRUE, jitter_amount = 1.001, log = FALSE, logbase = 15, squared = FALSE){
   
   # Select columns which contain "long" or "lat" in their name
