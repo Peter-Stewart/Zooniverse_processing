@@ -376,6 +376,11 @@ consensus_classifications <- consensus_classifications %>% select(
 
 # AT THIS STAGE MERGE IN EXPERT CLASSIFICATIONS IF I MAKE THOSE EVENTUALLY
 
+
+# Subset user classifications to dry season data only until Oct/Nov data have been completed on Zooniverse
+dry_season <- interval("2021-01-01", "2021-05-01")
+consensus_classifications <- consensus_classifications %>% filter(DateTimeLub %within% dry_season)
+
 # Number of times each image has been classified as containing interaction with cactus
 interactions <- user_classifications %>% filter(interacting == 1) %>% 
   group_by(subject_id) %>% 
@@ -405,7 +410,7 @@ interactions_filelist <- interactions_filelist %>% select(path)
 
 # Generate detection matrix for each species (number of detections per hour, can binarise if needed) ####
 # Hours and days for all sites - will need these so that hours/days with no detections can be kept as zero
-setwd("C:/temp/Zooniverse/June22")
+setwd("C:/temp/Zooniverse/Oct22")
 startends <- read.csv("Fieldseason1_startends.csv")
 startends$Days <- as.integer(startends$Days) + 1L # Add one or it doesn't count the deployment day!
 
@@ -422,13 +427,13 @@ user_classifications <- user_classifications %>% unite(DateNum, c("Year", "Month
 hrs <- as.data.frame(0:23); colnames(hrs) <- "hr"
 sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 
-sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
-  filter(!is.na(Days)) %>%
-  uncount(Days)
+#sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
+#  filter(!is.na(Days)) %>%
+#  uncount(Days)
   
 
 # Each row is one site
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v1.R", echo = FALSE)
+source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
 
 # Create (binary) detection matrix for each species
 sp_list <- unique(levels(consensus_classifications$species))
