@@ -3,6 +3,9 @@ library(dplyr)
 library(tidyr)
 library(lubridate)
 
+# Source helper functions ####
+source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
+
 # Load data ####
 setwd("C:/temp/Zooniverse/Oct22")
 
@@ -204,7 +207,7 @@ subjects_sub <- subjects_sub %>% unite(DateTimeNum, c("DateNum", "TimeNum"), sep
 subjects_sub$DateTimeLub <- as_datetime(subjects_sub$DateTimeNum)
 
 
-# Fixes ####
+# Date and time tixes ####
 # Dates/times are wrong for three sites where camera 15 was deployed, due to a fault with the camera
 # Correct these using offset calculated from known deployment time
 
@@ -374,25 +377,31 @@ consensus_classifications <- consensus_classifications %>% select(
   DateTimeLub
 )
 
-# AT THIS STAGE MERGE IN EXPERT CLASSIFICATIONS IF I MAKE THOSE EVENTUALLY
+############################################################################
+# AT THIS STAGE MERGE IN EXPERT CLASSIFICATIONS WHEN I MAKE THOSE EVENTUALLY
+############################################################################
 
-
-# Subset user classifications to dry season data only until Oct/Nov data have been completed on Zooniverse
+# Subset  classifications to dry season data only until Oct/Nov data have been completed on Zooniverse ####
 dry_season <- interval("2021-01-01", "2021-05-01")
 consensus_classifications <- consensus_classifications %>% filter(DateTimeLub %within% dry_season)
+user_classifications <- user_classifications %>% filter(DateTimeLub %within% dry_season)
 
-# Number of times each image has been classified as containing interaction with cactus
+# Generate list of images where volunteers ID "interaction with cactus" ####
+
+interactions_threshold <- 8 # Theshold for number of votes to appear in final list
+
+# Number of times each image has been classified as containing interaction with cactus 
 interactions <- user_classifications %>% filter(interacting == 1) %>% 
   group_by(subject_id) %>% 
   count(interacting, name = "votes") %>%
   select(-interacting)
 interactions <- as.data.frame(interactions)
 
-interactions_threshold <- 8 # Theshold for number of times "interacting with cactus" is selected
+# Filter and merge with subject data
 interactions <- interactions %>% filter(votes >= interactions_threshold)
-
 interactions <- merge(interactions, subjects_sub, all.x =  TRUE)
 
+# Generate list
 interactions_filelist <- interactions
 interactions_filelist$subfolder <- gsub("_IMG.*","",interactions_filelist$File)
 interactions_filelist$subfolder <- gsub("_RCNX.*","",interactions_filelist$subfolder)
@@ -404,16 +413,18 @@ interactions_filelist$path <- ifelse(grepl("RCNX", interactions_filelist$path, f
                                      paste0(interactions_filelist$path, ".jpg"))
 interactions_filelist <- interactions_filelist %>% select(path)
 
+# Save the list
 #setwd("C:/temp/Zooniverse/June22")
 #write.table(interactions_filelist, file = "interactions_filelist.txt",
 #            sep = "\t", col.names = FALSE, row.names = FALSE)
 
-# Generate detection matrix for each species (number of detections per hour, can binarise if needed) ####
-# Hours and days for all sites - will need these so that hours/days with no detections can be kept as zero
+# Generate detection matrix for each species####
+# Load starts/ends data - will need this so that hours/days with no detections can be kept as zero
 setwd("C:/temp/Zooniverse/Oct22")
 startends <- read.csv("Fieldseason1_startends.csv")
 startends$Days <- as.integer(startends$Days) + 1L # Add one or it doesn't count the deployment day!
 
+# Get dates in correct format
 startends$Deploy_month <- ifelse(startends$Deploy_month < 10, paste("0",startends$Deploy_month,sep=""), startends$Deploy_month)
 startends <- startends %>% unite(Deploy_date_num, c("Deploy_year", "Deploy_month", "Deploy_day"), sep = "-", remove = FALSE)
 startends$Deploy_date_lub <- as_date(startends$Deploy_date_num)
@@ -424,7 +435,7 @@ user_classifications$Year <- as.integer(paste("20",user_classifications$Year, se
 
 user_classifications <- user_classifications %>% unite(DateNum, c("Year", "Month2", "Day"), sep = "-", remove = FALSE)
 
-hrs <- as.data.frame(0:23); colnames(hrs) <- "hr"
+#hrs <- as.data.frame(0:23); colnames(hrs) <- "hr"
 sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 
 #sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
@@ -432,10 +443,7 @@ sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 #  uncount(Days)
   
 
-# Each row is one site
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
-
-# Create (binary) detection matrix for each species
+# Create (binary) detection matrix for each species 
 sp_list <- unique(levels(consensus_classifications$species))
 
 detmats <- list()
@@ -443,33 +451,3 @@ for(i in 1:length(sp_list)){
   detmats[[i]] <- generate_detection_matrix_days(sp=sp_list[i], binary=TRUE)
 }
 names(detmats) <- sp_list
-
-
-
-
-# Each row is one day at a site
-
-
-
-# should be zero if surveyed but not seen, NA if not surveyed - so need to check how many days each camera was deployed for
-# all columns should be zero, but some rows may be entirely NA - since in current format all hours are surveyed, but not all days
-# can then just remove empty days? (days which are all NA) - or all 0 after converting NA to 0
-# can always expand to deal with hours at end which aren't measured - fill with NA
-
-# if changing to visits==days then will have more standard ragged array with NA for days which weren't surveyed
-
-# can use time of deployment from sheet and time of last image (whether empty or not) to define start/end times
-
-
-# need to source helper functions here
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v1.R", echo = FALSE)
-
-# Create (binary) detection matrix for each species
-sp_list <- unique(levels(consensus_classifications$species))
-
-detmats2 <- list()
-for(i in 1:length(sp_list)){
-  detmats2[[i]] <- generate_detection_matrix_hours(sp=sp_list[i], binary=FALSE)
-}
-names(detmats2) <- sp_list
-
