@@ -6,20 +6,24 @@ library(tidyr)
 library(bayesplot)
 
 # Source helper functions ####
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v1.R", echo = FALSE)
+source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
 
 # Load real data so we can use the real distances between sites ####
-setwd("C:/temp/Zooniverse/June22")
+setwd("C:/temp/Zooniverse/Oct22/processed")
 sitedays <- get(load("sitedays.Rdata"))
+sitedays_aggregated <- sitedays %>% group_by(Site) %>% summarise(Days_total = sum(Days))
 
 setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
 site_data <- read.csv("Cameras_site_data_main.csv", header = TRUE)
 site_data <- site_data %>% filter(Site_ID %in% sitedays$Site)
 
 # Generate synthetic data ####
+# Set seed
+set.seed(6322)
+
 # Basic parameters for simulation
 sites <- nrow(site_data) # Use real number of sites
-days <- as.integer(sitedays$Days) # Use real number of deployment days for each camera
+days <- as.integer(sitedays_aggregated$Days_total) # Use real number of deployment days for each camera
 
 # Create distance matrix and squared distance matrix
 dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
@@ -59,7 +63,7 @@ x <- rnorm(nrow(dmat), betamx*m, 1)
 psi <- inv_logit(k_bar + varint + betax*x + betam*m)
 
 # Covariate for detection probability
-w <- matrix(NA, nrow=nrow(dmat), ncol=max(sitedays$Days))
+w <- matrix(NA, nrow=nrow(dmat), ncol=max(sitedays_aggregated$Days_total))
 for(i in 1:nrow(w)){
   for(k in 1:ncol(w)){
     w[i,k] <- rnorm(1,0,1)
@@ -84,7 +88,7 @@ for(i in 1:nrow(dmat)){
 }
 
 # Observed detection history
-y <- matrix(NA, nrow=nrow(dmat), ncol=max(sitedays$Days))
+y <- matrix(NA, nrow=nrow(dmat), ncol=max(sitedays_aggregated$Days_total))
 for(i in 1:nrow(y)){
   for(k in 1:ncol(y)){
     y[i,k] <- rbinom(1,1,pdet[i,k]*z[i])
@@ -93,8 +97,8 @@ for(i in 1:nrow(y)){
 
 # Replace observed data with NA for visits which did not take place
 for(i in 1:nrow(y)){
-  for(k in 1:max(sitedays$Days)){
-    if(k <= sitedays$Days[i])
+  for(k in 1:max(sitedays_aggregated$Days_total)){
+    if(k <= sitedays_aggregated$Days_total[i])
       y[i, k] <- y[i, k]
     else
       y[i, k] <- NA
@@ -112,8 +116,8 @@ w[is.na(w)] <- -9999
 dlist <- list(
   # Number of sites and visits
   nsites = as.integer(nrow(dmat)),
-  N_maxvisits = as.integer(max(sitedays$Days)),
-  V = as.integer(sitedays$Days),
+  N_maxvisits = as.integer(max(sitedays_aggregated$Days_total)),
+  V = as.integer(sitedays_aggregated$Days_total),
   # Observed data
   y = y,
   # Occupancy covariates
@@ -163,7 +167,6 @@ par_symbols <- c(expression(beta[x]),
                  expression(alpha[DET]),
                  expression(bar(k)))
 
-
 true_vals <- c(betax, betam, betadet, alphadet, k_bar) # True values
 
 par(mfrow=c(ceiling(length(key_pars)/3),3))
@@ -204,7 +207,7 @@ psi_PI50 <- apply(post$psi, 2, HPDI, prob=0.50)
 
 # Plot estimate against true value
 par(mfrow=c(1,1))
-par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mar=c(5.1, 5.1, 4.1, 2.1))
 plot(NULL, xlim=c(0,1), ylim=c(0,1), xlab=expression("True "*psi*" value"), ylab=expression(hat(psi)))
 abline(a=0,b=1, lty=2) # true = predicted
 
@@ -232,7 +235,7 @@ for(i in 1:length(psi)){
 
 # Median - sites with more visits have darker points
 for(i in 1:length(psi)){
-  points(x = psi[i], y = psi_mu[i], pch = 16, col=col.alpha("black",  sitedays$Days[i]/max(sitedays$Days)))
+  points(x = psi[i], y = psi_mu[i], pch = 16, col=col.alpha("black",  sitedays_aggregated$Days_total[i]/max(sitedays_aggregated$Days_total)))
 }
 #points(x = psi, y = psi_mu, pch=16, col="black") # Or use this code for points instead to make them all same shade
 
@@ -283,3 +286,4 @@ for(i in 1:nrow(dmat)){
     }
   }
 }
+
