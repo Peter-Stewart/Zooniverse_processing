@@ -3,28 +3,42 @@ library(rethinking)
 library(dplyr)
 library(tidyr)
 library(bayesplot)
-library(ggdist)
 library(viridis)
+library(activity)
+library(lubridate)
+
+# Source helper functions ####
+source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
 
 # Load data ####
-setwd("C:/temp/Zooniverse/June22")
-sitedays <- get(load("sitedays.Rdata"))
+setwd("C:/temp/Zooniverse/Oct22/processed")
+consensus_classifications <- get(load("consensus_classifications.Rdata"))
 detmats <- get(load("detmats.Rdata"))
+startends <- get(load("startends.Rdata"))
+sitedays <- get(load("sitedays.Rdata"))
+sitedays <- sitedays %>% group_by(Site) %>% summarise(Days = sum(Days)) # Group by site to get total days
 
 setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
 site_data <- read.csv("Cameras_site_data_main.csv", header = TRUE)
-site_data <- site_data %>% filter(Site_ID %in% sitedays$Site)
+site_data <- site_data %>% filter(Site_ID %in% sitedays$Site) # Remove the two vandalised sites
 
 opuntia_data <- read.csv("Cameras_opuntia_data_main.csv", header = TRUE)
+opuntia_data <- opuntia_data %>% filter(Site_ID %in% sitedays$Site) # Remove the two vandalised sites
 
 tree_data <- read.csv("Cameras_tree_data_main.csv", header = TRUE)
-
-dist_river <- read.csv("distance_to_river.csv", header = TRUE)
-dist_road <- read.csv("distance_to_road.csv", header = TRUE)
+tree_data <- tree_data %>% filter(Site_ID %in% sitedays$Site) # Remove the two vandalised sites
 
 df_mu_f <- get(load("grid_square_fruiting.Rdata"))
 df_mu_n <- get(load("grid_square_non_fruiting.Rdata"))
 df_mu_t <- get(load("grid_square_total.Rdata"))
+
+setwd("C:/GIS_temp/Ch3_spatial_analysis/Fieldseason1/Outputs")
+dist_river <- read.csv("distance_to_river.csv", header = TRUE)
+dist_road <- read.csv("distance_to_road.csv", header = TRUE)
+
+setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+weather <- read.csv("Mpala_weather.csv")
+weather <- weather %>% separate(TIMESTAMP, into = c("Date", "Time"), sep = " ", remove = FALSE, convert = FALSE)
 
 # Process data into required format ####
 # Merge distance to river/road into the main sites dataframe
@@ -73,8 +87,8 @@ tree_sites <- tree_data %>% select(Site_ID, FOV, Area) %>%
   summarise(n_trees = sum(n_trees)) 
 tree_sites <- tree_sites %>% filter(Site_ID %in% sitedays$Site)
 
-site_data <- merge(site_data, tree_sites, by="Site_ID")
-
+site_data <- merge(site_data, tree_sites, by="Site_ID", all.x = TRUE)
+site_data$n_trees[is.na(site_data$n_trees)] <- 0 # Sites with no tree data have zero trees
 
 # Average % covers across FOV and area
 site_data$grass_total <- (site_data$Grass_FOV + (3*site_data$Grass_area)) / 4
@@ -114,85 +128,27 @@ site_data <- merge(site_data, df_mu_t, by="grid_square", all.x = TRUE)
 site_data <- merge(site_data, df_mu_f, by="grid_square", all.x = TRUE)
 site_data <- merge(site_data, df_mu_n, by="grid_square", all.x = TRUE)
 
+# Detection covariates 
+# Camera model
+site_data$Cam_model <- as.factor(site_data$Cam_model)
+
+# Weather
+temperature <- bind_daily_covs(startends = startends,
+                               day_data = weather, 
+                               day_cov = "AirTC_1_Avg",
+                               summary_type = "mean",
+                               standardise = TRUE,
+                               date_format = "dmy")
+temperature[is.na(temperature)] <- -9999 # Replace NA with ridiculous number so it's obvious if these values are used accidentally
+temperature_mat <- as.matrix(temperature[,-1])
+
 # Ensure that site_data is ordered by site_ID
 site_data <- site_data[order(site_data$Site_ID),]
 
 # Generate distance matrix
-generate_distance_matrix <- function(df, rescale = FALSE, rescale_constant = 1, sites_as_days = FALSE, jitter = TRUE, jitter_amount = 1.001, log = FALSE, logbase = 15, squared = FALSE){
-  
-  # Select columns which contain "long" or "lat" in their name
-  coords <- df %>% select(contains("long") | contains("lat"))
-  
-  # Return error if more than two columns
-  if(length(coords) > 2){
-    stop("More than two coordinate columns - make sure dataframe contains lat and long coordinates only")
-  }
-  
-  if(sites_as_days == TRUE){
-    if(!exists("sitedays")){
-      stop("Please load the sitedays dataframe")
-    }
-    
-    sites <- df %>% select(contains("site") & !contains("description"))
-    colnames(sites) <- c("Site")
-    coords <- cbind(sites, coords)
-    coords <- merge(coords, sitedays, by = "Site")
-    ff <- coords %>% uncount(Days)
-    ff$Site <- ifelse(ff$Site < 10, paste0("0", ff$Site), ff$Site)
-    ff$Site <- paste0("Site_",ff$Site)
-    gg <- rep(NA, nrow(ff))
-    gg[1] <- 1
-    ff <- cbind(ff,gg)
-    for(i in 2:nrow(ff)){
-      if(ff$Site[i]==ff$Site[i-1])
-        ff$gg[i] <-  ff$gg[i-1] + 1L 
-      else
-        ff$gg[i] <- 1L
-    }
-    ff$site_day <- paste0(ff$Site,"_",ff$gg)
-    coords <- ff %>% select(-Site, -gg)
-    rownames(coords) <- coords$site_day
-    coords <- coords %>% select(-site_day)
-  }
-  
-
-  # Calculate distance matrix
-  dmat <- dist(coords, diag=T, upper=T)
-  dmat <- as.matrix(dmat)
-  
-  # Optionally rescale by dividing each distance by some constant (default = 1, i.e. you need to define a constant or nothing will happen!)
-  if(rescale == TRUE){
-    if(rescale_constant == 1){
-      warning("Please define a constant to rescale distances, using the rescale_constant option.")
-    }
-    dmat <- dmat / rescale_constant
-  }
-  
-  # Optionally add jitter to off-diagonal zeros to prevent numerical underflow
-  if(jitter == TRUE){
-    warning("Adding jitter to off-diagonal zeros to prevent numerical underflow in Gaussian Process. Set jitter = FALSE to disable.")
-    dmat <- ifelse(dmat==0, dmat+jitter_amount, dmat)
-    diag(dmat) <- 0
-  }
-  
-  # Optionally log-transform
-  if(log == TRUE){
-    dmat <- ifelse(dmat > 0, log(dmat, base = logbase), dmat)
-  }
-  
-  # Optionally return squared distances
-  if(squared == TRUE){
-    dmat2 <- dmat^2
-    return(dmat2)
-  }
-  else{
-    return(dmat)
-  } 
-}
-
 dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
 
-# Run models - fine-scale #### 
+# Occupancy models - fine-scale #### 
 setwd("C:/temp/ch3_post")
 
 key_sp <- c("baboon",
@@ -217,9 +173,9 @@ indexes <- do.call(rbind, indexes)
 #                "total_effect_no_veg_path",
 #                "total_effect_veg_path")
 
-#model_list <- "direct_effects"
+model_list <- "direct_effects"
 #model_list <- "total_effect_no_veg_path"
-model_list <- "total_effect_veg_path"
+#model_list <- "total_effect_veg_path"
 
 
 # Parameters to control the models
@@ -227,7 +183,7 @@ n_chains <- 4 # Number of chains
 n_cores <- 4 # Number of computer cores
 n_warmup <- 3000 # Number of warmup iterations per chain
 n_iter <- 4000 # Total number of iterations (warmup + sample) per chain
-  
+ 
 # Temporarily suppress warnings
 oldw <- getOption("warn")
 options(warn = -1)
@@ -236,7 +192,7 @@ options(warn = -1)
 # loop through all key species, run model, save results and diagnostics
 for(m in 1:length(model_list)){
   
-  setwd(paste0("C:/temp/ch3_post/",model_list[m]))
+  setwd(paste0("C:/temp/ch3_post/fine_scale/",model_list[m]))
   
   for(sp in 1:length(key_sp)){
   
@@ -256,7 +212,7 @@ for(m in 1:length(model_list)){
     # Observed data
     y = dd,
     # Occupancy covariates
-    opuntia_vol = standardize(site_data$opuntia_volume),
+    opuntia_vol = standardize(site_data$opuntia_total_cover),
     fruit = standardize(site_data$total_ripe),
     d_water = standardize(site_data$dist_river),
     d_road = standardize(site_data$dist_road),
@@ -267,6 +223,8 @@ for(m in 1:length(model_list)){
     succulent = standardize(site_data$succulent_total),
     tree = standardize(site_data$n_trees),
     # Detection covariates
+    cam_model = as.integer(site_data$Cam_model),
+    temp = temperature_mat,
     
     # Distance matrix
     dmat = dmat
@@ -349,13 +307,22 @@ for(i in 1:length(detmats)){
 indexes <- do.call(rbind, indexes)
 
 # List the models which will be run
-#model_list <- c("direct_effects",
-#                "total_effect_no_veg_path",
-#                "total_effect_veg_path")
+model_list <- c("direct_effects",
+                "total_effect_no_veg_path",
+                "total_effect_veg_path")
 
-model_list <- "direct_effects"
+#model_list <- "direct_effects"
 #model_list <- "total_effect_no_veg_path"
 #model_list <- "total_effect_veg_path"
+
+site_data$volume_total <- as.numeric(site_data$volume_total)
+site_data$volume_fruiting <- as.numeric(site_data$volume_fruiting)
+site_data$volume_nonfruiting <- as.numeric(site_data$volume_nonfruiting)
+
+grid_data <- site_data %>% filter(!is.na(volume_total))
+sitedays_grid <- sitedays %>% filter(Site %in% grid_data$Site_ID)
+
+dmat <- generate_distance_matrix(grid_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
 
 
 # Parameters to control the models
@@ -374,34 +341,36 @@ for(m in 1:length(model_list)){
   
   setwd(paste0("C:/temp/ch3_post/grid_square/",model_list[m]))
   
+  
   for(sp in 1:length(key_sp)){
     
-    # Select data for the species
-    dd <- detmats[indexes[sp,]]
-    dd <- dd[[1]]
+    dd <- (detmats[indexes[sp,]])
+    dd <- as.data.frame(dd[[1]])
+    dd <- dd %>% filter(dd$site %in% grid_data$Site_ID)
     dd <- as.matrix(dd[,-1])
     dd[is.na(dd)] <- -9999
     mode(dd) <- "integer"
+    
     
     # Prepare data list for Stan
     dlist <- list(
       # Number of sites and visits
       nsites = as.integer(nrow(dmat)),
-      N_maxvisits = as.integer(max(sitedays$Days)),
-      V = as.integer(sitedays$Days),
+      N_maxvisits = as.integer(max(sitedays_grid$Days)),
+      V = as.integer(sitedays_grid$Days),
       # Observed data
       y = dd,
       # Occupancy covariates
-      opuntia_vol = standardize(site_data$volume_total),
-      fruit = standardize(site_data$volume_fruiting),
-      d_water = standardize(site_data$dist_river),
-      d_road = standardize(site_data$dist_road),
-      livestock = standardize(site_data$livestock_proportion),
-      grass = standardize(site_data$grass_total),
-      forb = standardize(site_data$forb_total),
-      shrub = standardize(site_data$shrub_total),
-      succulent = standardize(site_data$succulent_total),
-      tree = standardize(site_data$n_trees),
+      opuntia_vol = standardize(grid_data$volume_total),
+      fruit = standardize(grid_data$volume_fruiting),
+      d_water = standardize(grid_data$dist_river),
+      d_road = standardize(grid_data$dist_road),
+      livestock = standardize(grid_data$livestock_proportion),
+      grass = standardize(grid_data$grass_total),
+      forb = standardize(grid_data$forb_total),
+      shrub = standardize(grid_data$shrub_total),
+      succulent = standardize(grid_data$succulent_total),
+      tree = standardize(grid_data$n_trees),
       # Detection covariates
       
       # Distance matrix
@@ -427,7 +396,7 @@ for(m in 1:length(model_list)){
     
     # Parameters to save in traceplots and trankplots
     p <- names(post)[grep("beta", names(post))] # Beta parameters
-    p2 <- c("alphadet", "etasq", "rhosq", "k_bar") # Other parameters
+    p2 <- c("alphadet_bar", "etasq", "rhosq", "k_bar") # Other parameters
     
     # Save traceplots for key parameters
     png(file = paste0(key_sp[sp],"_",model_list[m],"_traceplots.png"), width = 804, height = 500, units = "px")
@@ -465,10 +434,10 @@ for(m in 1:length(model_list)){
 options(warn = oldw)
 
 
-# Marginal effect plots ####
+# Marginal effect plots - fine-scale ####
 
 # Direct effects ####
-setwd("C:/temp/ch3_post/direct_effects")
+setwd("C:/temp/ch3_post/fine_scale/direct_effects")
 post_direct_baboon <- get(load("baboon_direct_effects_post.Rdata")); rm(post); gc()
 post_direct_elephant <- get(load("elephant_direct_effects_post.Rdata")); rm(post); gc()
 post_direct_vervetmonkey <- get(load("vervetmonkey_direct_effects_post.Rdata")); rm(post); gc()
@@ -599,6 +568,333 @@ gc()
 
 # Total effects with vegetation pathway ####
 setwd("C:/temp/ch3_post/total_effect_veg_path")
+post_total_veg_path_baboon <- get(load("baboon_total_effect_veg_path_post.Rdata")); rm(post); gc()
+post_total_veg_path_elephant <- get(load("elephant_total_effect_veg_path_post.Rdata")); rm(post); gc()
+post_total_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_veg_path_post.Rdata")); rm(post); gc()
+post_total_veg_path_zebragrevys <- get(load("zebragrevys_total_effect_veg_path_post.Rdata")); rm(post); gc()
+post_total_veg_path_impala <- get(load("impala_total_effect_veg_path_post.Rdata")); rm(post); gc()
+post_total_veg_path_giraffe <- get(load("giraffe_total_effect_veg_path_post.Rdata")); rm(post); gc()
+post_total_veg_path_hyenaspotted <- get(load("hyenaspotted_total_effect_veg_path_post.Rdata")); rm(post); gc()
+
+# Get posterior samples for the estimands
+df_total_veg_path_baboon <- as.data.frame(cbind(post_total_veg_path_baboon$beta_opuntia, post_total_veg_path_baboon$beta_fruit, post_total_veg_path_baboon$k_bar))
+df_total_veg_path_elephant <- as.data.frame(cbind(post_total_veg_path_elephant$beta_opuntia, post_total_veg_path_elephant$beta_fruit, post_total_veg_path_elephant$k_bar))
+df_total_veg_path_vervetmonkey <- as.data.frame(cbind(post_total_veg_path_vervetmonkey$beta_opuntia, post_total_veg_path_vervetmonkey$beta_fruit, post_total_veg_path_vervetmonkey$k_bar))
+df_total_veg_path_zebragrevys <- as.data.frame(cbind(post_total_veg_path_zebragrevys$beta_opuntia, post_total_veg_path_zebragrevys$beta_fruit, post_total_veg_path_zebragrevys$k_bar))
+df_total_veg_path_impala <- as.data.frame(cbind(post_total_veg_path_impala$beta_opuntia, post_total_veg_path_impala$beta_fruit, post_total_veg_path_impala$k_bar))
+df_total_veg_path_giraffe <- as.data.frame(cbind(post_total_veg_path_giraffe$beta_opuntia, post_total_veg_path_giraffe$beta_fruit, post_total_veg_path_giraffe$k_bar))
+df_total_veg_path_hyenaspotted <- as.data.frame(cbind(post_total_veg_path_hyenaspotted$beta_opuntia, post_total_veg_path_hyenaspotted$beta_fruit, post_total_veg_path_hyenaspotted$k_bar))
+
+# Remove full posterior distributions to save memory
+rm(post_total_veg_path_baboon)
+rm(post_total_veg_path_elephant)
+rm(post_total_veg_path_vervetmonkey)
+rm(post_total_veg_path_zebragrevys)
+rm(post_total_veg_path_impala)
+rm(post_total_veg_path_giraffe)
+rm(post_total_veg_path_hyenaspotted)
+gc()
+
+# Add species column
+df_total_veg_path_baboon$species <- as.factor("baboon")
+df_total_veg_path_elephant$species <- as.factor("elephant")
+df_total_veg_path_vervetmonkey$species <- as.factor("vervetmonkey")
+df_total_veg_path_zebragrevys$species <- as.factor("zebragrevys")
+df_total_veg_path_impala$species <- as.factor("impala")
+df_total_veg_path_giraffe$species <- as.factor("giraffe")
+df_total_veg_path_hyenaspotted$species <- as.factor("hyenaspotted")
+
+colnames(df_total_veg_path_baboon) <- c("beta_total2", "k_bar3", "species")
+colnames(df_total_veg_path_elephant) <- c("beta_total2", "k_bar3", "species")
+colnames(df_total_veg_path_vervetmonkey) <- c("beta_total2", "k_bar3", "species")
+colnames(df_total_veg_path_zebragrevys) <- c("beta_total2", "k_bar3", "species")
+colnames(df_total_veg_path_impala) <- c("beta_total2", "k_bar3", "species")
+colnames(df_total_veg_path_giraffe) <- c("beta_total2", "k_bar3", "species")
+colnames(df_total_veg_path_hyenaspotted) <- c("beta_total2", "k_bar3", "species")
+
+# Bind into one big dataframe
+beta_total_veg_path_df <- rbind(df_total_veg_path_baboon, 
+                                df_total_veg_path_elephant,
+                                df_total_veg_path_vervetmonkey,
+                                df_total_veg_path_zebragrevys,
+                                df_total_veg_path_impala,
+                                df_total_veg_path_giraffe,
+                                df_total_veg_path_hyenaspotted)
+
+# Remove the separate df's to save memory
+rm(df_total_veg_path_baboon)
+rm(df_total_veg_path_elephant)
+rm(df_total_veg_path_giraffe)
+rm(df_total_veg_path_hyenaspotted)
+rm(df_total_veg_path_impala)
+rm(df_total_veg_path_vervetmonkey)
+rm(df_total_veg_path_zebragrevys)
+gc()
+
+
+# Combine into one dataframe
+beta_all_df <- cbind(beta_direct_df, beta_total_no_veg_path_df[,-3], beta_total_veg_path_df[,-3])
+
+
+# Marginal effect plots ####
+key_sp <- c("baboon",
+            "elephant",
+            "vervetmonkey",
+            "zebragrevys",
+            "impala",
+            "giraffe",
+            "hyenaspotted")
+
+species_names <- c("Olive baboon",
+                   "Elephant",
+                   "Vervet monkey",
+                   "Grevy's zebra",
+                   "Impala", 
+                   "Giraffe",
+                   "Spotted hyena")
+
+# Colours for shading CI's for each species
+species_colours <- viridis(7)
+colouralpha <- 0.4
+
+
+par(mfrow=c(length(key_sp),4), mar=c(3, 2, 2, 2))
+xseq <- seq(-2, 2, by = 0.01)
+
+# Loop over each species
+for(i in 1:length(key_sp)){
+  s <- beta_all_df %>% filter(species == key_sp[i])
+  
+  # Calculate marginal effects using k_bar and the beta parameters
+  p1 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
+  p2 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
+  p3 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
+  p4 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
+  
+  for(x in 1:length(xseq)){
+    p1[,x] <- inv_logit(s$k_bar1 + s$beta_opuntia*xseq[x])
+    p2[,x] <- inv_logit(s$k_bar1 + s$beta_fruit*xseq[x])
+    p3[,x] <- inv_logit(s$k_bar2 + s$beta_total1*xseq[x])
+    p4[,x] <- inv_logit(s$k_bar3 + s$beta_total2*xseq[x])
+  }
+  
+  # Calculate mean and CI's
+  mu1 <- apply(p1, 2, mean)
+  PI95_1 <- apply(p1, 2, HPDI, prob=0.96)
+  PI89_1 <- apply(p1, 2, HPDI, prob=0.89)
+  PI80_1 <- apply(p1, 2, HPDI, prob=0.80)
+  PI70_1 <- apply(p1, 2, HPDI, prob=0.70)
+  PI60_1 <- apply(p1, 2, HPDI, prob=0.60)
+  PI50_1 <- apply(p1, 2, HPDI, prob=0.50)
+  PI_all_1 <- rbind(PI95_1, PI89_1, PI80_1, PI70_1, PI60_1, PI50_1)
+  
+  mu2 <- apply(p2, 2, mean)
+  PI95_2 <- apply(p2, 2, HPDI, prob=0.96)
+  PI89_2 <- apply(p2, 2, HPDI, prob=0.89)
+  PI80_2 <- apply(p2, 2, HPDI, prob=0.80)
+  PI70_2 <- apply(p2, 2, HPDI, prob=0.70)
+  PI60_2 <- apply(p2, 2, HPDI, prob=0.60)
+  PI50_2 <- apply(p2, 2, HPDI, prob=0.50)
+  PI_all_2 <- rbind(PI95_2, PI89_2, PI80_2, PI70_2, PI60_2, PI50_2)
+  
+  mu3 <- apply(p3, 2, mean)
+  PI95_3 <- apply(p3, 2, HPDI, prob=0.96)
+  PI89_3 <- apply(p3, 2, HPDI, prob=0.89)
+  PI80_3 <- apply(p3, 2, HPDI, prob=0.80)
+  PI70_3 <- apply(p3, 2, HPDI, prob=0.70)
+  PI60_3 <- apply(p3, 2, HPDI, prob=0.60)
+  PI50_3 <- apply(p3, 2, HPDI, prob=0.50)
+  PI_all_3 <- rbind(PI95_3, PI89_3, PI80_3, PI70_3, PI60_3, PI50_3)
+  
+  mu4 <- apply(p4, 2, mean)
+  PI95_4 <- apply(p4, 2, HPDI, prob=0.96)
+  PI89_4 <- apply(p4, 2, HPDI, prob=0.89)
+  PI80_4 <- apply(p4, 2, HPDI, prob=0.80)
+  PI70_4 <- apply(p4, 2, HPDI, prob=0.70)
+  PI60_4 <- apply(p4, 2, HPDI, prob=0.60)
+  PI50_4 <- apply(p4, 2, HPDI, prob=0.50)
+  PI_all_4 <- rbind(PI95_4, PI89_4, PI80_4, PI70_4, PI60_4, PI50_4)
+  
+  # Make the plots
+  plot(NULL, xlim=c(-2,2), ylim=c(0,1), main=paste0(species_names[i],", Structural Effect"), ylab = expression(psi), xlab="Opuntia volume (standardised)")
+  shade(PI95_1, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI89_1, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI80_1, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI70_1, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI60_1, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI50_1, xseq, col=col.alpha(species_colours[i], colouralpha))
+  abline(v=0, lty=2)
+  abline(h=0.5, lty=2)
+  points(x = xseq, y = mu1, type="l", lwd=2)
+  
+  plot(NULL, xlim=c(-2,2), ylim=c(0,1), main=paste0(species_names[i],", Fruit Effect"), ylab = expression(psi), xlab="Number of ripe fruits (standardised)")
+  shade(PI95_2, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI89_2, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI80_2, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI70_2, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI60_2, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI50_2, xseq, col=col.alpha(species_colours[i], colouralpha))
+  abline(v=0, lty=2)
+  abline(h=0.5, lty=2)
+  points(x = xseq, y = mu2, type="l", lwd=2)
+  
+  plot(NULL, xlim=c(-2,2), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (no veg. path)"), ylab = expression(psi), xlab="Opuntia volume (standardised)")
+  shade(PI95_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI89_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI80_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI70_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI60_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI50_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  abline(v=0, lty=2)
+  abline(h=0.5, lty=2)
+  points(x = xseq, y = mu3, type="l", lwd=2)
+  
+  plot(NULL, xlim=c(-2,2), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (veg. path)"), ylab = expression(psi), xlab="Opuntia volume (standardised)")
+  shade(PI95_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI89_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI80_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI70_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI60_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI50_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  abline(v=0, lty=2)
+  abline(h=0.5, lty=2)
+  points(x = xseq, y = mu4, type="l", lwd=2)
+}
+
+# Marginal effect plots - broad-scale ####
+
+# Direct effects ####
+setwd("C:/temp/ch3_post/grid_square/direct_effects")
+post_direct_baboon <- get(load("baboon_direct_effects_post.Rdata")); rm(post); gc()
+post_direct_elephant <- get(load("elephant_direct_effects_post.Rdata")); rm(post); gc()
+post_direct_vervetmonkey <- get(load("vervetmonkey_direct_effects_post.Rdata")); rm(post); gc()
+post_direct_zebragrevys <- get(load("zebragrevys_direct_effects_post.Rdata")); rm(post); gc()
+post_direct_impala <- get(load("impala_direct_effects_post.Rdata")); rm(post); gc()
+post_direct_giraffe <- get(load("giraffe_direct_effects_post.Rdata")); rm(post); gc()
+post_direct_hyenaspotted <- get(load("hyenaspotted_direct_effects_post.Rdata")); rm(post); gc()
+
+# Get posterior samples for the estimands
+df_direct_baboon <- as.data.frame(cbind(post_direct_baboon$beta_opuntia, post_direct_baboon$beta_fruit, post_direct_baboon$k_bar))
+df_direct_elephant <- as.data.frame(cbind(post_direct_elephant$beta_opuntia, post_direct_elephant$beta_fruit, post_direct_elephant$k_bar))
+df_direct_vervetmonkey <- as.data.frame(cbind(post_direct_vervetmonkey$beta_opuntia, post_direct_vervetmonkey$beta_fruit, post_direct_vervetmonkey$k_bar))
+df_direct_zebragrevys <- as.data.frame(cbind(post_direct_zebragrevys$beta_opuntia, post_direct_zebragrevys$beta_fruit, post_direct_zebragrevys$k_bar))
+df_direct_impala <- as.data.frame(cbind(post_direct_impala$beta_opuntia, post_direct_impala$beta_fruit, post_direct_impala$k_bar))
+df_direct_giraffe <- as.data.frame(cbind(post_direct_giraffe$beta_opuntia, post_direct_giraffe$beta_fruit, post_direct_giraffe$k_bar))
+df_direct_hyenaspotted <- as.data.frame(cbind(post_direct_hyenaspotted$beta_opuntia, post_direct_hyenaspotted$beta_fruit, post_direct_hyenaspotted$k_bar))
+
+# Remove full posterior distributions to save memory
+rm(post_direct_baboon)
+rm(post_direct_elephant)
+rm(post_direct_vervetmonkey)
+rm(post_direct_zebragrevys)
+rm(post_direct_impala)
+rm(post_direct_giraffe)
+rm(post_direct_hyenaspotted)
+gc()
+
+# Add species column
+df_direct_baboon$species <- as.factor("baboon")
+df_direct_elephant$species <- as.factor("elephant")
+df_direct_vervetmonkey$species <- as.factor("vervetmonkey")
+df_direct_zebragrevys$species <- as.factor("zebragrevys")
+df_direct_impala$species <- as.factor("impala")
+df_direct_giraffe$species <- as.factor("giraffe")
+df_direct_hyenaspotted$species <- as.factor("hyenaspotted")
+
+colnames(df_direct_baboon) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
+colnames(df_direct_elephant) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
+colnames(df_direct_vervetmonkey) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
+colnames(df_direct_zebragrevys) <-c("beta_opuntia", "beta_fruit","k_bar1", "species")
+colnames(df_direct_impala) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
+colnames(df_direct_giraffe) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
+colnames(df_direct_hyenaspotted) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
+
+# Bind into one big dataframe
+beta_direct_df <- rbind(df_direct_baboon, 
+                        df_direct_elephant,
+                        df_direct_vervetmonkey,
+                        df_direct_zebragrevys,
+                        df_direct_impala,
+                        df_direct_giraffe,
+                        df_direct_hyenaspotted)
+
+# Remove the separate df's to save memory
+rm(df_direct_baboon)
+rm(df_direct_elephant)
+rm(df_direct_giraffe)
+rm(df_direct_hyenaspotted)
+rm(df_direct_impala)
+rm(df_direct_vervetmonkey)
+rm(df_direct_zebragrevys)
+gc()
+
+# Total effects without vegetation pathway ####
+setwd("C:/temp/ch3_post/grid_square/total_effect_no_veg_path")
+post_total_no_veg_path_baboon <- get(load("baboon_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
+post_total_no_veg_path_elephant <- get(load("elephant_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
+post_total_no_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
+post_total_no_veg_path_zebragrevys <- get(load("zebragrevys_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
+post_total_no_veg_path_impala <- get(load("impala_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
+post_total_no_veg_path_giraffe <- get(load("giraffe_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
+post_total_no_veg_path_hyenaspotted <- get(load("hyenaspotted_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
+
+# Get posterior samples for the estimands
+df_total_no_veg_path_baboon <- as.data.frame(cbind(post_total_no_veg_path_baboon$beta_opuntia, post_total_no_veg_path_baboon$beta_fruit, post_total_no_veg_path_baboon$k_bar))
+df_total_no_veg_path_elephant <- as.data.frame(cbind(post_total_no_veg_path_elephant$beta_opuntia, post_total_no_veg_path_elephant$beta_fruit, post_total_no_veg_path_elephant$k_bar))
+df_total_no_veg_path_vervetmonkey <- as.data.frame(cbind(post_total_no_veg_path_vervetmonkey$beta_opuntia, post_total_no_veg_path_vervetmonkey$beta_fruit, post_total_no_veg_path_vervetmonkey$k_bar))
+df_total_no_veg_path_zebragrevys <- as.data.frame(cbind(post_total_no_veg_path_zebragrevys$beta_opuntia, post_total_no_veg_path_zebragrevys$beta_fruit, post_total_no_veg_path_zebragrevys$k_bar))
+df_total_no_veg_path_impala <- as.data.frame(cbind(post_total_no_veg_path_impala$beta_opuntia, post_total_no_veg_path_impala$beta_fruit, post_total_no_veg_path_impala$k_bar))
+df_total_no_veg_path_giraffe <- as.data.frame(cbind(post_total_no_veg_path_giraffe$beta_opuntia, post_total_no_veg_path_giraffe$beta_fruit, post_total_no_veg_path_giraffe$k_bar))
+df_total_no_veg_path_hyenaspotted <- as.data.frame(cbind(post_total_no_veg_path_hyenaspotted$beta_opuntia, post_total_no_veg_path_hyenaspotted$beta_fruit, post_total_no_veg_path_hyenaspotted$k_bar))
+
+# Remove full posterior distributions to save memory
+rm(post_total_no_veg_path_baboon)
+rm(post_total_no_veg_path_elephant)
+rm(post_total_no_veg_path_vervetmonkey)
+rm(post_total_no_veg_path_zebragrevys)
+rm(post_total_no_veg_path_impala)
+rm(post_total_no_veg_path_giraffe)
+rm(post_total_no_veg_path_hyenaspotted)
+gc()
+
+# Add species column
+df_total_no_veg_path_baboon$species <- as.factor("baboon")
+df_total_no_veg_path_elephant$species <- as.factor("elephant")
+df_total_no_veg_path_vervetmonkey$species <- as.factor("vervetmonkey")
+df_total_no_veg_path_zebragrevys$species <- as.factor("zebragrevys")
+df_total_no_veg_path_impala$species <- as.factor("impala")
+df_total_no_veg_path_giraffe$species <- as.factor("giraffe")
+df_total_no_veg_path_hyenaspotted$species <- as.factor("hyenaspotted")
+
+colnames(df_total_no_veg_path_baboon) <- c("beta_total1", "k_bar2", "species")
+colnames(df_total_no_veg_path_elephant) <- c("beta_total1", "k_bar2", "species")
+colnames(df_total_no_veg_path_vervetmonkey) <- c("beta_total1", "k_bar2", "species")
+colnames(df_total_no_veg_path_zebragrevys) <- c("beta_total1", "k_bar2", "species")
+colnames(df_total_no_veg_path_impala) <- c("beta_total1", "k_bar2", "species")
+colnames(df_total_no_veg_path_giraffe) <- c("beta_total1", "k_bar2", "species")
+colnames(df_total_no_veg_path_hyenaspotted) <- c("beta_total1", "k_bar2", "species")
+
+# Bind into one big dataframe
+beta_total_no_veg_path_df <- rbind(df_total_no_veg_path_baboon, 
+                                   df_total_no_veg_path_elephant,
+                                   df_total_no_veg_path_vervetmonkey,
+                                   df_total_no_veg_path_zebragrevys,
+                                   df_total_no_veg_path_impala,
+                                   df_total_no_veg_path_giraffe,
+                                   df_total_no_veg_path_hyenaspotted)
+
+# Remove the separate df's to save memory
+rm(df_total_no_veg_path_baboon)
+rm(df_total_no_veg_path_elephant)
+rm(df_total_no_veg_path_giraffe)
+rm(df_total_no_veg_path_hyenaspotted)
+rm(df_total_no_veg_path_impala)
+rm(df_total_no_veg_path_vervetmonkey)
+rm(df_total_no_veg_path_zebragrevys)
+gc()
+
+# Total effects with vegetation pathway ####
+setwd("C:/temp/ch3_post/grid_square/total_effect_veg_path")
 post_total_veg_path_baboon <- get(load("baboon_total_effect_veg_path_post.Rdata")); rm(post); gc()
 post_total_veg_path_elephant <- get(load("elephant_total_effect_veg_path_post.Rdata")); rm(post); gc()
 post_total_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_veg_path_post.Rdata")); rm(post); gc()
