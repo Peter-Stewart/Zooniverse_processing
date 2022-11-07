@@ -1,4 +1,5 @@
-bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean", date_format = "ymd"){
+# Function to take covariates defined on day/sub-day level (e.g., weather data) and arrange them into same format as detection matrix.
+bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean", date_format = "ymd", sites_as_integers = TRUE){
   
   # Select date format (default is year-month-day)
   if(date_format == "dmy"){
@@ -28,8 +29,6 @@ bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean",
     cov_daily <- cov_daily %>% group_by(DateLub) %>% summarise(var = max(!!sym(day_cov)))
   }
   
-  cov_daily <- cov_daily %>% rename_with(.fn = ~paste0(day_cov,"_",summary_type), .cols = "var")
-
   # Create dataframe with date for each visit (k)
   sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
     filter(!is.na(Days)) %>%
@@ -50,9 +49,24 @@ bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean",
   
   # Merge by date
   k_covs <- merge(sites_k, cov_daily, by.x = "k_date", by.y = "DateLub", all.x = TRUE)
+  k_covs <- k_covs %>% select(Site, k, var)
   
-  k_covs <- k_covs %>% select(-Deploy_date_lub)
+  df <- k_covs
   
-  # Return k_covs
-  return(k_covs)
+  # Optionally (default behaviour) turn the site ID's into integers
+  if(sites_as_integers == TRUE){
+    df$Site <- gsub("Site_","",df$Site)
+    df$Site <- as.integer(df$Site)
+    df <- df[order(df$Site),]
+  }
+  
+  # Make from long to wide (i.e. make columns days)
+  df$k <- ifelse(df$k < 10, paste0("0", df$k), df$k)
+  df$k <- as.factor(paste0("V",df$k))
+  df <- df %>% rename(visit = k)
+  df <- df %>% pivot_wider(names_from = visit, values_from = var) 
+  df <- df %>% select(order(colnames(df)))
+  
+  # Return df
+  return(df)
 }
