@@ -1,5 +1,5 @@
 # Function to take covariates defined on day/sub-day level (e.g., weather data) and arrange them into same format as detection matrix.
-bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean", date_format = "ymd", sites_as_integers = TRUE){
+bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean", standardise = FALSE, standardize = FALSE, date_format = "ymd", sites_as_integers = TRUE){
   
   # Select date format (default is year-month-day)
   if(date_format == "dmy"){
@@ -14,8 +14,8 @@ bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean",
   }
   
   # Select the day_data to use
-  cov_daily <- weather %>% select(DateLub, day_cov)
-    
+  cov_daily <- day_data %>% select(DateLub, day_cov)
+  
   # Group and summarise based on the selected option  
   if(summary_type == "mean"){
     cov_daily <- cov_daily %>% group_by(DateLub) %>% summarise(var = mean(!!sym(day_cov)))
@@ -52,6 +52,11 @@ bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean",
   k_covs <- k_covs %>% select(Site, k, var)
   
   df <- k_covs
+  
+  # Optionally standardise the covariate (subtract mean and divide by sd)
+  if(standardise == TRUE | standardize == TRUE){
+    df$var <- standardize(df$var)
+  }
   
   # Optionally (default behaviour) turn the site ID's into integers
   if(sites_as_integers == TRUE){
