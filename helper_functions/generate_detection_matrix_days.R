@@ -5,7 +5,7 @@ generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers
     stop("Please load the consensus_classifications dataframe")
   }
   
-  # Check if sitedays dataframe exists, stop and warn if not
+  # Check if startends dataframe exists, stop and warn if not
   if(!exists("startends")){
     stop("Please load the startends dataframe")
   }
