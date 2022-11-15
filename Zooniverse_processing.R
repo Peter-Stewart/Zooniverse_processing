@@ -326,6 +326,19 @@ subjects_sub <- rbind(errors, correct)
 #hist(subjects_sub$DateTimeLub, breaks=100) # Confirm that all date/times are now within the correct range
 
 # Generate consensus classifications ####
+# Flag ID's made by expert users
+expert_usernames <- c("Peter.Stewart","Callie25")
+user_classifications$gold <- ifelse(user_classifications$user_name %in% expert_usernames, 1, 0)
+
+expert_verified <- user_classifications %>% filter(gold == 1)
+
+# Separate the classifications made by the rest of the volunteers
+user_classifications <- user_classifications %>% filter(subject_id %notin% expert_verified$subject_id)
+
+# Validation set with expert vs. volunteer classifications on same images
+validation_set <- user_classifications %>% filter(subject_id %in% expert_verified$subject_id)
+validation_set <- rbind(validation_set, expert_verified)
+
 # Calculate number of votes for each species in each subject
 sp_votes <- user_classifications %>% group_by(subject_id) %>% count(species, name = "votes") 
 
@@ -366,7 +379,9 @@ sp_votes <- merge(sp_votes, entropy, by = "subject_id", all.x = TRUE)
 
 # Subset accepted classifications and merge with site data - drop columns which aren't needed
 # Only take images with 12 or more classifications - ones with fewer have been flagged "human" and need expert check
-accepted <- sp_votes %>% filter(total_subject_classifications > 11) %>% filter(classification_accept==TRUE)
+accepted <- sp_votes %>% filter(total_subject_classifications > 10) %>% filter(classification_accept==TRUE)
+
+expert_verified <- expert_verified %>% select(subject_id, species, metadata, site, DateTimeLub)
 
 consensus_classifications <- merge(accepted, subjects_sub, all=TRUE)
 consensus_classifications <- consensus_classifications %>% select(
@@ -376,6 +391,8 @@ consensus_classifications <- consensus_classifications %>% select(
   site,
   DateTimeLub
 )
+
+consensus_classifications <- rbind(consensus_classifications, expert_verified)
 
 ############################################################################
 # AT THIS STAGE MERGE IN EXPERT CLASSIFICATIONS WHEN I MAKE THOSE EVENTUALLY
@@ -451,3 +468,12 @@ for(i in 1:length(sp_list)){
   detmats[[i]] <- generate_detection_matrix_days(sp=sp_list[i], binary=TRUE)
 }
 names(detmats) <- sp_list
+
+# Save results ####
+setwd("C:/temp/Zooniverse/Oct22/processed")
+
+save(consensus_classifications, file = "consensus_classifications.Rdata")
+save(detmats, file = "detmats.Rdata")
+save(startends, file = "startends.Rdata")
+save(sitedays, file = "sitedays.Rdata")
+save(validation_set, file = "validation_set.Rdata")
