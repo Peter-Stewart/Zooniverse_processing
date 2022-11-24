@@ -664,7 +664,7 @@ species_names <- c("Olive baboon",
                    "Spotted hyena")
 
 # Colours for shading CI's for each species
-species_colours <- viridis(7)
+#species_colours <- viridis(7)
 species_colours <- rep("#35B779FF", 7)
 colouralpha <- 0.4
 
@@ -733,40 +733,25 @@ for(i in 1:length(key_sp)){
   id1 <- which(xseq < -0.7575 | xseq > 1.3098)
   id2 <- which(xseq < -0.65416 | xseq > 4.2039)
   
-  xseq1 <- xseq[id1]
-  xseq2 <- xseq[id2]
+  xseq1 <- xseq
+  xseq2 <- xseq
+  
+  xseq1[id1] <- NA
+  xseq2[id2] <- NA
+  
+  xseq1 <- xseq1[!is.na(xseq1)]
+  xseq2 <- xseq2[!is.na(xseq2)]
 
   mu1[id1] <- NA
-  PI95_1[,id1] <- NA
-  PI89_1[,id1] <- NA
-  PI80_1[,id1] <- NA
-  PI70_1[,id1] <- NA
-  PI60_1[,id1] <- NA
-  PI50_1[,id1] <- NA
-  
   mu1 <- mu1[!is.na(mu1)]
-  PI95_1 <- PI95_1[, colSums(is.na(PI95_1)) == 0]
-  PI89_1 <- PI89_1[, colSums(is.na(PI89_1)) == 0]
-  PI80_1 <- PI80_1[, colSums(is.na(PI80_1)) == 0]
-  PI70_1 <- PI70_1[, colSums(is.na(PI70_1)) == 0]
-  PI60_1 <- PI60_1[, colSums(is.na(PI60_1)) == 0]
-  PI50_1 <- PI50_1[, colSums(is.na(PI50_1)) == 0]
-  
+  PI89_1[,id1] <- NA
+  PI89_1 <- PI89_1[, !apply(is.na(PI89_1), 2, any)]
+
   mu2[id2] <- NA
-  PI95_2[,id2] <- NA
-  PI89_2[,id2] <- NA
-  PI80_2[,id2] <- NA
-  PI70_2[,id2] <- NA
-  PI60_2[,id2] <- NA
-  PI50_2[,id2] <- NA
-  
   mu2 <- mu2[!is.na(mu2)]
-  PI95_2 <- PI95_2[, colSums(is.na(PI95_2)) == 0]
-  PI89_2 <- PI89_2[, colSums(is.na(PI89_2)) == 0]
-  PI80_2 <- PI80_2[, colSums(is.na(PI80_2)) == 0]
-  PI70_2 <- PI70_2[, colSums(is.na(PI70_2)) == 0]
-  PI60_2 <- PI60_2[, colSums(is.na(PI60_2)) == 0]
-  PI50_2 <- PI50_2[, colSums(is.na(PI50_2)) == 0]
+  PI89_2[,id2] <- NA
+  PI89_2 <- PI89_2[, !apply(is.na(PI89_2), 2, any)]
+
   
   # Make the plots
   plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Direct Effects"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
@@ -815,7 +800,7 @@ for(i in 1:length(key_sp)){
 # Marginal effect plots - broad-scale ####
 
 # Direct effects ####
-setwd("C:/temp/ch3_post/grid_square/direct_effects")
+setwd("E:/ch3_post_new/grid_square/direct_effects")
 post_direct_baboon <- get(load("baboon_direct_effects_post.Rdata")); rm(post); gc()
 post_direct_elephant <- get(load("elephant_direct_effects_post.Rdata")); rm(post); gc()
 post_direct_vervetmonkey <- get(load("vervetmonkey_direct_effects_post.Rdata")); rm(post); gc()
@@ -825,13 +810,13 @@ post_direct_giraffe <- get(load("giraffe_direct_effects_post.Rdata")); rm(post);
 post_direct_hyenaspotted <- get(load("hyenaspotted_direct_effects_post.Rdata")); rm(post); gc()
 
 # Get posterior samples for the estimands
-df_direct_baboon <- as.data.frame(cbind(post_direct_baboon$beta_opuntia, post_direct_baboon$beta_fruit, post_direct_baboon$k_bar))
-df_direct_elephant <- as.data.frame(cbind(post_direct_elephant$beta_opuntia, post_direct_elephant$beta_fruit, post_direct_elephant$k_bar))
-df_direct_vervetmonkey <- as.data.frame(cbind(post_direct_vervetmonkey$beta_opuntia, post_direct_vervetmonkey$beta_fruit, post_direct_vervetmonkey$k_bar))
-df_direct_zebragrevys <- as.data.frame(cbind(post_direct_zebragrevys$beta_opuntia, post_direct_zebragrevys$beta_fruit, post_direct_zebragrevys$k_bar))
-df_direct_impala <- as.data.frame(cbind(post_direct_impala$beta_opuntia, post_direct_impala$beta_fruit, post_direct_impala$k_bar))
-df_direct_giraffe <- as.data.frame(cbind(post_direct_giraffe$beta_opuntia, post_direct_giraffe$beta_fruit, post_direct_giraffe$k_bar))
-df_direct_hyenaspotted <- as.data.frame(cbind(post_direct_hyenaspotted$beta_opuntia, post_direct_hyenaspotted$beta_fruit, post_direct_hyenaspotted$k_bar))
+df_direct_baboon <- as.data.frame(cbind(post_direct_baboon$beta_opuntia, post_direct_baboon$beta_fruit, post_direct_baboon$k_bar, post_direct_baboon$beta_opuntia_fruit))
+df_direct_elephant <- as.data.frame(cbind(post_direct_elephant$beta_opuntia, post_direct_elephant$beta_fruit, post_direct_elephant$k_bar, post_direct_elephant$beta_opuntia_fruit))
+df_direct_vervetmonkey <- as.data.frame(cbind(post_direct_vervetmonkey$beta_opuntia, post_direct_vervetmonkey$beta_fruit, post_direct_vervetmonkey$k_bar, post_direct_vervetmonkey$beta_opuntia_fruit))
+df_direct_zebragrevys <- as.data.frame(cbind(post_direct_zebragrevys$beta_opuntia, post_direct_zebragrevys$beta_fruit, post_direct_zebragrevys$k_bar, post_direct_zebragrevys$beta_opuntia_fruit))
+df_direct_impala <- as.data.frame(cbind(post_direct_impala$beta_opuntia, post_direct_impala$beta_fruit, post_direct_impala$k_bar, post_direct_impala$beta_opuntia_fruit))
+df_direct_giraffe <- as.data.frame(cbind(post_direct_giraffe$beta_opuntia, post_direct_giraffe$beta_fruit, post_direct_giraffe$k_bar, post_direct_giraffe$beta_opuntia_fruit))
+df_direct_hyenaspotted <- as.data.frame(cbind(post_direct_hyenaspotted$beta_opuntia, post_direct_hyenaspotted$beta_fruit, post_direct_hyenaspotted$k_bar, post_direct_hyenaspotted$beta_opuntia_fruit))
 
 # Remove full posterior distributions to save memory
 rm(post_direct_baboon)
@@ -852,13 +837,13 @@ df_direct_impala$species <- as.factor("impala")
 df_direct_giraffe$species <- as.factor("giraffe")
 df_direct_hyenaspotted$species <- as.factor("hyenaspotted")
 
-colnames(df_direct_baboon) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
-colnames(df_direct_elephant) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
-colnames(df_direct_vervetmonkey) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
-colnames(df_direct_zebragrevys) <-c("beta_opuntia", "beta_fruit","k_bar1", "species")
-colnames(df_direct_impala) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
-colnames(df_direct_giraffe) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
-colnames(df_direct_hyenaspotted) <- c("beta_opuntia", "beta_fruit","k_bar1", "species")
+colnames(df_direct_baboon) <- c("beta_opuntia", "beta_fruit","k_bar1","beta_opuntia_fruit", "species")
+colnames(df_direct_elephant) <- c("beta_opuntia", "beta_fruit","k_bar1","beta_opuntia_fruit", "species")
+colnames(df_direct_vervetmonkey) <- c("beta_opuntia", "beta_fruit","k_bar1","beta_opuntia_fruit", "species")
+colnames(df_direct_zebragrevys) <-c("beta_opuntia", "beta_fruit","k_bar1","beta_opuntia_fruit", "species")
+colnames(df_direct_impala) <- c("beta_opuntia", "beta_fruit","k_bar1","beta_opuntia_fruit", "species")
+colnames(df_direct_giraffe) <- c("beta_opuntia", "beta_fruit","k_bar1","beta_opuntia_fruit", "species")
+colnames(df_direct_hyenaspotted) <- c("beta_opuntia", "beta_fruit","k_bar1","beta_opuntia_fruit", "species")
 
 # Bind into one big dataframe
 beta_direct_df <- rbind(df_direct_baboon, 
@@ -880,7 +865,7 @@ rm(df_direct_zebragrevys)
 gc()
 
 # Total effects without vegetation pathway ####
-setwd("C:/temp/ch3_post/grid_square/total_effect_no_veg_path")
+setwd("E:/ch3_post_new/grid_square/total_effect_no_veg_path")
 post_total_no_veg_path_baboon <- get(load("baboon_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
 post_total_no_veg_path_elephant <- get(load("elephant_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
 post_total_no_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
@@ -945,7 +930,7 @@ rm(df_total_no_veg_path_zebragrevys)
 gc()
 
 # Total effects with vegetation pathway ####
-setwd("C:/temp/ch3_post/grid_square/total_effect_veg_path")
+setwd("E:/ch3_post_new/grid_square/total_effect_veg_path")
 post_total_veg_path_baboon <- get(load("baboon_total_effect_veg_path_post.Rdata")); rm(post); gc()
 post_total_veg_path_elephant <- get(load("elephant_total_effect_veg_path_post.Rdata")); rm(post); gc()
 post_total_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_veg_path_post.Rdata")); rm(post); gc()
@@ -1032,34 +1017,36 @@ species_names <- c("Olive baboon",
                    "Spotted hyena")
 
 # Colours for shading CI's for each species
-species_colours <- viridis(7)
+#species_colours <- viridis(7)
+species_colours <- rep("#35B779FF", 7)
 colouralpha <- 0.4
 
 
-par(mfrow=c(length(key_sp),4), mar=c(3, 2, 2, 2))
-xseq <- seq(-0.7575, 4.2039, by = 0.001) # Use real min/max Opuntia cover (standardised) values
-xseq1 <- seq(-0.7575, 1.3098, by = 0.001) # Standardised cover when fruit = 0
-xseq2 <- seq(-0.65416, 4.2039, by = 0.001) # Standardised cover when fruit = 1
+par(mfrow=c(length(key_sp),2), mar=c(3, 2, 2, 2))
+xseq <- seq(-1.554, 3.585, by = 0.001) # Use real min/max Opuntia cover (standardised) values
+#xseq1 <- seq(-0.7575, 1.3098, by = 0.001) # Standardised cover when fruit = 0
+#xseq2 <- seq(-0.65416, 4.2039, by = 0.001) # Standardised cover when fruit = 1
 
 # Loop over each species
 for(i in 1:length(key_sp)){
   s <- beta_all_df %>% filter(species == key_sp[i])
   
   # Calculate marginal effects using k_bar and the beta parameters
-  p1 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
-  p2 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
+  p1 <- matrix(NA, nrow=nrow(s), ncol=length(xseq)) # When fruit = 0 
+  p2 <- matrix(NA, nrow=nrow(s), ncol=length(xseq)) # When fruit = 1
   p3 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
   p4 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
   
   for(x in 1:length(xseq)){
-    p1[,x] <- inv_logit(s$k_bar1 + s$beta_opuntia*xseq[x])
-    p2[,x] <- inv_logit(s$k_bar1 + s$beta_fruit*xseq[x])
+    p1[,x] <- inv_logit(s$k_bar1 + s$beta_opuntia*xseq[x] + s$beta_fruit*-1 + s$beta_opuntia_fruit*xseq[x]*-1)  # When fruit = -1
+    p2[,x] <- inv_logit(s$k_bar1 + s$beta_opuntia*xseq[x] + s$beta_fruit*2.5 + s$beta_opuntia_fruit*xseq[x]*2.5) # When fruit = 2.5
     p3[,x] <- inv_logit(s$k_bar2 + s$beta_total1*xseq[x])
     p4[,x] <- inv_logit(s$k_bar3 + s$beta_total2*xseq[x])
   }
   
+  
   # Calculate mean and CI's
-  mu1 <- apply(p1, 2, mean)
+  mu1 <- apply(p1, 2, median)
   PI95_1 <- apply(p1, 2, HPDI, prob=0.96)
   PI89_1 <- apply(p1, 2, HPDI, prob=0.89)
   PI80_1 <- apply(p1, 2, HPDI, prob=0.80)
@@ -1068,7 +1055,7 @@ for(i in 1:length(key_sp)){
   PI50_1 <- apply(p1, 2, HPDI, prob=0.50)
   PI_all_1 <- rbind(PI95_1, PI89_1, PI80_1, PI70_1, PI60_1, PI50_1)
   
-  mu2 <- apply(p2, 2, mean)
+  mu2 <- apply(p2, 2, median)
   PI95_2 <- apply(p2, 2, HPDI, prob=0.96)
   PI89_2 <- apply(p2, 2, HPDI, prob=0.89)
   PI80_2 <- apply(p2, 2, HPDI, prob=0.80)
@@ -1077,7 +1064,7 @@ for(i in 1:length(key_sp)){
   PI50_2 <- apply(p2, 2, HPDI, prob=0.50)
   PI_all_2 <- rbind(PI95_2, PI89_2, PI80_2, PI70_2, PI60_2, PI50_2)
   
-  mu3 <- apply(p3, 2, mean)
+  mu3 <- apply(p3, 2, median)
   PI95_3 <- apply(p3, 2, HPDI, prob=0.96)
   PI89_3 <- apply(p3, 2, HPDI, prob=0.89)
   PI80_3 <- apply(p3, 2, HPDI, prob=0.80)
@@ -1086,7 +1073,7 @@ for(i in 1:length(key_sp)){
   PI50_3 <- apply(p3, 2, HPDI, prob=0.50)
   PI_all_3 <- rbind(PI95_3, PI89_3, PI80_3, PI70_3, PI60_3, PI50_3)
   
-  mu4 <- apply(p4, 2, mean)
+  mu4 <- apply(p4, 2, median)
   PI95_4 <- apply(p4, 2, HPDI, prob=0.96)
   PI89_4 <- apply(p4, 2, HPDI, prob=0.89)
   PI80_4 <- apply(p4, 2, HPDI, prob=0.80)
@@ -1095,50 +1082,52 @@ for(i in 1:length(key_sp)){
   PI50_4 <- apply(p4, 2, HPDI, prob=0.50)
   PI_all_4 <- rbind(PI95_4, PI89_4, PI80_4, PI70_4, PI60_4, PI50_4)
   
+  xseq1 <- xseq
+  xseq2 <- xseq
+  
   # Make the plots
-  plot(NULL, xlim=c(-2,2), ylim=c(0,1), main=paste0(species_names[i],", Structural Effect"), ylab = expression(psi), xlab="Opuntia volume (standardised)")
-  shade(PI95_1, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI89_1, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI80_1, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI70_1, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI60_1, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI50_1, xseq, col=col.alpha(species_colours[i], colouralpha))
-  abline(v=0, lty=2)
-  abline(h=0.5, lty=2)
-  points(x = xseq, y = mu1, type="l", lwd=2)
+  #plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Direct Effects"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
+  #shade(PI95_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
+  #shade(PI89_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
+  #shade(PI80_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
+  #shade(PI70_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
+  #shade(PI60_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
+  #shade(PI50_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
   
-  plot(NULL, xlim=c(-2,2), ylim=c(0,1), main=paste0(species_names[i],", Fruit Effect"), ylab = expression(psi), xlab="Number of ripe fruits (standardised)")
-  shade(PI95_2, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI89_2, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI80_2, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI70_2, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI60_2, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI50_2, xseq, col=col.alpha(species_colours[i], colouralpha))
-  abline(v=0, lty=2)
-  abline(h=0.5, lty=2)
-  points(x = xseq, y = mu2, type="l", lwd=2)
+  #shade(PI95_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
+  #shade(PI89_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
+  #shade(PI80_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
+  #shade(PI70_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
+  #shade(PI60_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
+  #shade(PI50_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
   
-  plot(NULL, xlim=c(-2,2), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (no veg. path)"), ylab = expression(psi), xlab="Opuntia volume (standardised)")
-  shade(PI95_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #points(x = xseq1, y = mu1, type="l", lwd=2, col = "#21908CFF")
+  #points(x = xseq2, y = mu2, type="l", lwd=2, col = "#443A83FF")
+  #abline(v=0, lty=2)
+  #abline(h=0.5, lty=2)
+  
+  plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (no veg. path)"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
+  #shade(PI95_3, xseq, col=col.alpha(species_colours[i], colouralpha))
   shade(PI89_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI80_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI70_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI60_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI50_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  abline(v=0, lty=2)
-  abline(h=0.5, lty=2)
+  #shade(PI80_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #shade(PI70_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #shade(PI60_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #shade(PI50_3, xseq, col=col.alpha(species_colours[i], colouralpha))
   points(x = xseq, y = mu3, type="l", lwd=2)
-  
-  plot(NULL, xlim=c(-2,2), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (veg. path)"), ylab = expression(psi), xlab="Opuntia volume (standardised)")
-  shade(PI95_4, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI89_4, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI80_4, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI70_4, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI60_4, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI50_4, xseq, col=col.alpha(species_colours[i], colouralpha))
   abline(v=0, lty=2)
   abline(h=0.5, lty=2)
+  
+  plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (veg. path)"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
+  #shade(PI95_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI89_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #shade(PI80_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #shade(PI70_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #shade(PI60_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #shade(PI50_4, xseq, col=col.alpha(species_colours[i], colouralpha))
   points(x = xseq, y = mu4, type="l", lwd=2)
+  abline(v=0, lty=2)
+  abline(h=0.5, lty=2)
+
 }
 
 
