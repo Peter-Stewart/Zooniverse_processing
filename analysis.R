@@ -151,7 +151,7 @@ dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6
 
 # Occupancy models - fine-scale #### 
 #setwd("C:/temp/ch3_post")
-setwd("E:/ch3_post_new/fine_scale/direct_effects")
+setwd("E:/ch3_post_test/fine_scale")
 
 key_sp <- c("baboon",
             "elephant",
@@ -162,7 +162,9 @@ key_sp <- c("baboon",
             "hyenaspotted")
 
 key_sp <- c("giraffe",
-            "hyenaspotted")
+           "hyenaspotted")
+
+key_sp <- "hyenaspotted"
 
 indexes <- list()
 for(i in 1:length(detmats)){
@@ -177,8 +179,8 @@ indexes <- do.call(rbind, indexes)
 #model_list <- c("total_effect_no_veg_path",
 #              "total_effect_veg_path")
 
-model_list <- "direct_effects"
-#model_list <- "total_effect_no_veg_path"
+#model_list <- "direct_effects"
+model_list <- "total_effect_no_veg_path"
 #model_list <- "total_effect_veg_path"
 
 
@@ -196,7 +198,7 @@ options(warn = -1)
 # loop through all key species, run model, save results and diagnostics
 for(m in 1:length(model_list)){
   
-  setwd(paste0("E:/ch3_post_new/fine_scale/",model_list[m]))
+  setwd(paste0("E:/ch3_post_test/fine_scale/",model_list[m]))
   
   for(sp in 1:length(key_sp)){
   
@@ -226,6 +228,7 @@ for(m in 1:length(model_list)){
     shrub = standardize(site_data$shrub_total),
     succulent = standardize(site_data$succulent_total),
     tree = standardize(site_data$n_trees),
+    lat = standardize(site_data$GPS_lat),
     # Detection covariates
     cam_model = as.integer(site_data$Cam_model),
     temp = temperature_mat,
@@ -292,7 +295,7 @@ for(m in 1:length(model_list)){
 options(warn = oldw)
 
 # Occupancy models - broad-scale ####
-setwd("E:/ch3_post_new/grid_square")
+setwd("E:/ch3_post_test/grid_square")
 
 key_sp <- c("baboon",
             "elephant",
@@ -313,12 +316,12 @@ for(i in 1:length(detmats)){
 indexes <- do.call(rbind, indexes)
 
 # List the models which will be run
-model_list <- c("direct_effects",
-                "total_effect_no_veg_path",
-                "total_effect_veg_path")
+#model_list <- c("direct_effects",
+#                "total_effect_no_veg_path",
+#                "total_effect_veg_path")
 
 #model_list <- "direct_effects"
-#model_list <- "total_effect_no_veg_path"
+model_list <- "total_effect_no_veg_path"
 #model_list <- "total_effect_veg_path"
 
 site_data$volume_total <- as.numeric(site_data$volume_total)
@@ -347,7 +350,7 @@ options(warn = -1)
 # loop through all key species, run model, save results and diagnostics
 for(m in 1:length(model_list)){
   
-  setwd(paste0("E:/ch3_post_new/grid_square/",model_list[m]))
+  setwd(paste0("E:/ch3_post_test/grid_square/",model_list[m]))
   
   
   for(sp in 1:length(key_sp)){
@@ -379,6 +382,7 @@ for(m in 1:length(model_list)){
       shrub = standardize(grid_data$shrub_total),
       succulent = standardize(grid_data$succulent_total),
       tree = standardize(grid_data$n_trees),
+      lat = standardize(grid_data$GPS_lat),
       # Detection covariates
       cam_model = as.integer(grid_data$Cam_model),
       temp = temperature_mat,
@@ -669,10 +673,11 @@ species_colours <- rep("#35B779FF", 7)
 colouralpha <- 0.4
 
 
-par(mfrow=c(length(key_sp),2), mar=c(3, 2, 2, 2))
+par(mfrow=c(length(key_sp),1), mgp=c(2,1,0), mar=c(3.5, 3.9, 1.5, 0.1))
 xseq <- seq(-0.7575, 4.2039, by = 0.001) # Use real min/max Opuntia cover (standardised) values
 #xseq1 <- seq(-0.7575, 1.3098, by = 0.001) # Standardised cover when fruit = 0
 #xseq2 <- seq(-0.65416, 4.2039, by = 0.001) # Standardised cover when fruit = 1
+
 
 # Loop over each species
 for(i in 1:length(key_sp)){
@@ -754,32 +759,33 @@ for(i in 1:length(key_sp)){
 
   
   # Make the plots
-  plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Direct Effects"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
+  #plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Direct Effects"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
   #shade(PI95_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
-  shade(PI89_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
+  #shade(PI89_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
   #shade(PI80_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
   #shade(PI70_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
   #shade(PI60_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
   #shade(PI50_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
   
   #shade(PI95_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
-  shade(PI89_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
+  #shade(PI89_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
   #shade(PI80_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
   #shade(PI70_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
   #shade(PI60_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
   #shade(PI50_2, xseq2, col=col.alpha("#443A83FF", colouralpha))
   
-  points(x = xseq1, y = mu1, type="l", lwd=2, col = "#21908CFF")
-  points(x = xseq2, y = mu2, type="l", lwd=2, col = "#443A83FF")
-  abline(v=0, lty=2)
-  abline(h=0.5, lty=2)
+  #points(x = xseq1, y = mu1, type="l", lwd=2, col = "#21908CFF")
+  #points(x = xseq2, y = mu2, type="l", lwd=2, col = "#443A83FF")
+  #abline(v=0, lty=2)
+  #abline(h=0.5, lty=2)
   
-  plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (no veg. path)"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
+  plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i]), ylab = expression(psi), xlab="Opuntia % cover (standardised)", yaxt = "n")
+  axis(2, at = c(0, 0.5, 1), labels = c(0, 0.5, 1))
   #shade(PI95_3, xseq, col=col.alpha(species_colours[i], colouralpha))
   shade(PI89_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  #shade(PI80_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  #shade(PI70_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  #shade(PI60_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI80_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI70_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI60_3, xseq, col=col.alpha(species_colours[i], colouralpha))
   #shade(PI50_3, xseq, col=col.alpha(species_colours[i], colouralpha))
   points(x = xseq, y = mu3, type="l", lwd=2)
   abline(v=0, lty=2)
@@ -1022,7 +1028,7 @@ species_colours <- rep("#35B779FF", 7)
 colouralpha <- 0.4
 
 
-par(mfrow=c(length(key_sp),2), mar=c(3, 2, 2, 2))
+par(mfrow=c(length(key_sp),1), mgp=c(2,1,0), mar=c(3.5, 3.9, 1.5, 0.1))
 xseq <- seq(-1.554, 3.585, by = 0.001) # Use real min/max Opuntia cover (standardised) values
 #xseq1 <- seq(-0.7575, 1.3098, by = 0.001) # Standardised cover when fruit = 0
 #xseq2 <- seq(-0.65416, 4.2039, by = 0.001) # Standardised cover when fruit = 1
@@ -1032,8 +1038,8 @@ for(i in 1:length(key_sp)){
   s <- beta_all_df %>% filter(species == key_sp[i])
   
   # Calculate marginal effects using k_bar and the beta parameters
-  p1 <- matrix(NA, nrow=nrow(s), ncol=length(xseq)) # When fruit = 0 
-  p2 <- matrix(NA, nrow=nrow(s), ncol=length(xseq)) # When fruit = 1
+  p1 <- matrix(NA, nrow=nrow(s), ncol=length(xseq)) # When fruit = -1 
+  p2 <- matrix(NA, nrow=nrow(s), ncol=length(xseq)) # When fruit = 2.5
   p3 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
   p4 <- matrix(NA, nrow=nrow(s), ncol=length(xseq))
   
@@ -1082,11 +1088,32 @@ for(i in 1:length(key_sp)){
   PI50_4 <- apply(p4, 2, HPDI, prob=0.50)
   PI_all_4 <- rbind(PI95_4, PI89_4, PI80_4, PI70_4, PI60_4, PI50_4)
   
+  # For p1 and p2 eliminate cover/fruit combos which don't exist in data
+  id1 <- which(xseq < -0.7575 | xseq > 1.3098)
+  id2 <- which(xseq < -0.65416 | xseq > 4.2039)
+  
   xseq1 <- xseq
   xseq2 <- xseq
   
+  xseq1[id1] <- NA
+  xseq2[id2] <- NA
+  
+  xseq1 <- xseq1[!is.na(xseq1)]
+  xseq2 <- xseq2[!is.na(xseq2)]
+  
+  mu1[id1] <- NA
+  mu1 <- mu1[!is.na(mu1)]
+  PI89_1[,id1] <- NA
+  PI89_1 <- PI89_1[, !apply(is.na(PI89_1), 2, any)]
+  
+  mu2[id2] <- NA
+  mu2 <- mu2[!is.na(mu2)]
+  PI89_2[,id2] <- NA
+  PI89_2 <- PI89_2[, !apply(is.na(PI89_2), 2, any)]
+  
   # Make the plots
-  #plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Direct Effects"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
+  #plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Direct Effects"), ylab = expression(psi), xlab="Opuntia grid square vol. (standardised)", yaxt = "n")
+  #axis(2, at = c(0, 0.5, 1), labels = c(0, 0.5, 1))
   #shade(PI95_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
   #shade(PI89_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
   #shade(PI80_1, xseq1, col=col.alpha("#35B779FF", colouralpha))
@@ -1106,27 +1133,28 @@ for(i in 1:length(key_sp)){
   #abline(v=0, lty=2)
   #abline(h=0.5, lty=2)
   
-  plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (no veg. path)"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
+  plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i]), ylab = expression(psi), xlab="Opuntia grid square vol. (standardised)", yaxt = "n")
+  axis(2, at = c(0, 0.5, 1), labels = c(0, 0.5, 1))
   #shade(PI95_3, xseq, col=col.alpha(species_colours[i], colouralpha))
   shade(PI89_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  #shade(PI80_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  #shade(PI70_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  #shade(PI60_3, xseq, col=col.alpha(species_colours[i], colouralpha))
-  #shade(PI50_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI80_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI70_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI60_3, xseq, col=col.alpha(species_colours[i], colouralpha))
+  shade(PI50_3, xseq, col=col.alpha(species_colours[i], colouralpha))
   points(x = xseq, y = mu3, type="l", lwd=2)
   abline(v=0, lty=2)
   abline(h=0.5, lty=2)
   
-  plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (veg. path)"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
+  #plot(NULL, xlim=c(min(xseq),max(xseq)), ylim=c(0,1), main=paste0(species_names[i],", Total Effect (veg. path)"), ylab = expression(psi), xlab="Opuntia % cover (standardised)")
   #shade(PI95_4, xseq, col=col.alpha(species_colours[i], colouralpha))
-  shade(PI89_4, xseq, col=col.alpha(species_colours[i], colouralpha))
+  #shade(PI89_4, xseq, col=col.alpha(species_colours[i], colouralpha))
   #shade(PI80_4, xseq, col=col.alpha(species_colours[i], colouralpha))
   #shade(PI70_4, xseq, col=col.alpha(species_colours[i], colouralpha))
   #shade(PI60_4, xseq, col=col.alpha(species_colours[i], colouralpha))
   #shade(PI50_4, xseq, col=col.alpha(species_colours[i], colouralpha))
-  points(x = xseq, y = mu4, type="l", lwd=2)
-  abline(v=0, lty=2)
-  abline(h=0.5, lty=2)
+  #points(x = xseq, y = mu4, type="l", lwd=2)
+  #abline(v=0, lty=2)
+  #abline(h=0.5, lty=2)
 
 }
 
@@ -1392,7 +1420,7 @@ post <- extract.samples(m_test)
 
 
 # Activity analysis ####
-# Loop through all key species, plot activity kernel for each and make 1 plot to compare overall activity levels
+# For all key species, plot activity kernel for each and make 1 plot to compare overall activity levels
 site_data$Pair <- as.factor(site_data$Pair)
 dd <- site_data %>% select(Pair, grid_square, Site_ID)
 high_sites <- dd %>% filter(Pair == "high")
@@ -1548,7 +1576,7 @@ m14 <- fitact(dat = t_rad2,
               show = TRUE)
 
 # Save results
-setwd("C:/temp/Zooniverse/Oct22/activity_analysis")
+setwd("E:/ch3_post_new/activity_analysis")
 save(m1, file = "baboon_high.Rdata")
 save(m2, file = "baboon_low.Rdata")
 save(m3, file = "elephant_high.Rdata")
@@ -1565,7 +1593,7 @@ save(m13, file = "hyenaspotted_high.Rdata")
 save(m14, file = "hyenaspotted_low.Rdata")
 
 # Loading saved data 
-setwd("C:/temp/Zooniverse/Sep22/activity_analysis")
+setwd("E:/ch3_post_new/activity_analysis")
 m1 <- get(load("baboon_high.Rdata"))
 m2 <- get(load("baboon_low.Rdata"))
 m3 <- get(load("elephant_high.Rdata"))
@@ -1678,7 +1706,13 @@ clean_activity_plot(m14,
 # Activity analysis split by site ####
 site_list <- unique(consensus_classifications$site)
 
-key_sp <- "elephant"
+key_sp <- c("baboon",
+            "elephant",
+            "vervetmonkey",
+            "zebragrevys",
+            "impala",
+            "giraffe",
+            "hyenaspotted")
 
 results_list <- list()
 
@@ -1707,13 +1741,40 @@ for(s in 1:length(key_sp)){
 
 names(results_list) <- key_sp
 
-act_results <- results_list[[1]]
+setwd("E:/ch3_post_new/activity_analysis")
+save(results_list, file = "activity_sitelevel_all.Rdata")
+
+results_list <- get(load("activity_sitelevel_all.Rdata"))
+
+act_results <- results_list$elephant
 act_results <- as.data.frame(act_results)
 act_results <- cbind(site_list, act_results)
 
 act_results$Site_ID <- as.numeric(gsub("Site_", "", act_results$site_list))
 
-act_results2 <- merge(act_results, site_data, by="Site_ID", all.x = TRUE)
+act_results2 <- merge(act_results, site_data, by="Site_ID", all.y = TRUE)
+
+act_results2$V1[is.na(act_results2$V1)] <- 0
+
+dlist <- list(
+  n_obs = nrow(act_results2),
+  y_obs = act_results2$V1*10,
+  x = standardize(act_results2$opuntia_total_cover),
+  dmat = dmat
+)
+
+m_test <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/hurdle_test/hurdle_test_v10.stan",
+                data = dlist,
+                chains = 4, 
+                cores = 4,
+                warmup = 2000,
+                iter = 3000)
+dashboard(m_test)
+precis(m_test)
+par(mfrow=c(1,1)); plot(precis(m_test))
+post <- extract.samples(m_test)
+
+
 
 #act_results2$opuntia_total_FOV <- act_results2$Opuntia_other_FOV + act_results2$Opuntia_stricta_FOV
 act_results3 <- act_results2[order(act_results2$total_ripe),]
