@@ -1333,7 +1333,7 @@ save(m13, file = "hyenaspotted_high.Rdata")
 save(m14, file = "hyenaspotted_low.Rdata")
 
 # Loading saved data 
-setwd("E:/ch3_post_new/activity_analysis")
+setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data/activity_analysis_output")
 m1 <- get(load("baboon_high.Rdata"))
 m2 <- get(load("baboon_low.Rdata"))
 m3 <- get(load("elephant_high.Rdata"))
@@ -1373,11 +1373,16 @@ points(x = 7, y = c7[1,1], pch=16); lines(x = c(7,7), y = c(c7[1,1]+c7[1,2],c7[1
 abline(h=0, lty=2)
 
 # Activity plots for each species
+par(mfrow=c(2,4))
+pr <- par()
+tiff("activity_plots_test.tiff", width = 15.83, height = 8.46, units = 'cm', res = 300)
+par(pr)
 # Baboon
 clean_activity_plot(m1, 
-                    species_title = "Olive baboon",
+                    species_title = "",
                     colour = "darkgreen",
                     alpha = 0.5)
+title("A)", adj=0, line = 0.7)
 clean_activity_plot(m2, 
                     colour = "lightgreen",
                     alpha = 0.5, 
@@ -1385,9 +1390,10 @@ clean_activity_plot(m2,
 
 # Elephant 
 clean_activity_plot(m3, 
-                    species_title = "Elephant",
+                    species_title = "",
                     colour = "darkgreen",
                     alpha = 0.5)
+title("B)", adj=0, line = 0.7)
 clean_activity_plot(m4, 
                     colour = "lightgreen",
                     alpha = 0.5, 
@@ -1395,9 +1401,10 @@ clean_activity_plot(m4,
 
 # Vervet monkey 
 clean_activity_plot(m5, 
-                    species_title = "Vervet monkey",
+                    species_title = "",
                     colour = "darkgreen",
                     alpha = 0.5)
+title("C)", adj=0, line = 0.7)
 clean_activity_plot(m6, 
                     colour = "lightgreen",
                     alpha = 0.5, 
@@ -1405,9 +1412,10 @@ clean_activity_plot(m6,
 
 # Grevy's zebra
 clean_activity_plot(m7, 
-                    species_title = "Grevy's zebra",
+                    species_title = "",
                     colour = "darkgreen",
                     alpha = 0.5)
+title("D)", adj=0, line = 0.7)
 clean_activity_plot(m8, 
                     colour = "lightgreen",
                     alpha = 0.5, 
@@ -1415,9 +1423,10 @@ clean_activity_plot(m8,
 
 # Impala
 clean_activity_plot(m9, 
-                    species_title = "Impala",
+                    species_title = "",
                     colour = "darkgreen",
                     alpha = 0.5)
+title("E)", adj=0, line = 0.7)
 clean_activity_plot(m10, 
                     colour = "lightgreen",
                     alpha = 0.5, 
@@ -1425,9 +1434,10 @@ clean_activity_plot(m10,
 
 # Giraffe
 clean_activity_plot(m11, 
-                    species_title = "Giraffe",
+                    species_title = "",
                     colour = "darkgreen",
                     alpha = 0.5)
+title("F)", adj=0, line = 0.7)
 clean_activity_plot(m12, 
                     colour = "lightgreen",
                     alpha = 0.5, 
@@ -1435,13 +1445,16 @@ clean_activity_plot(m12,
 
 # Spotted hyena
 clean_activity_plot(m13, 
-                    species_title = "Spotted hyena",
+                    species_title = "",
                     colour = "darkgreen",
                     alpha = 0.5)
+title("G)", adj=0, line = 0.7)
 clean_activity_plot(m14, 
                     colour = "lightgreen",
                     alpha = 0.5, 
                     add = TRUE)
+
+dev.off()
 
 # Activity analysis split by site ####
 site_list <- unique(consensus_classifications$site)
@@ -1481,17 +1494,20 @@ for(s in 1:length(key_sp)){
 
 names(results_list) <- key_sp
 
-setwd("E:/ch3_post_new/activity_analysis")
+# Save activity results for each site
+setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data/activity_analysis_output")
 save(results_list, file = "activity_sitelevel_all.Rdata")
 
+# Load activity results for each site
+setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data/activity_analysis_output")
 results_list <- get(load("activity_sitelevel_all.Rdata"))
 
-act_results <- results_list$elephant
+# Fit hurdle model for each species
+act_results <- results_list$hyenaspotted
 act_results <- as.data.frame(act_results)
 act_results <- cbind(site_list, act_results)
 
 act_results$Site_ID <- as.numeric(gsub("Site_", "", act_results$site_list))
-
 act_results2 <- merge(act_results, site_data, by="Site_ID", all.y = TRUE)
 
 act_results2$V1[is.na(act_results2$V1)] <- 0
@@ -1499,44 +1515,175 @@ act_results2$V1[is.na(act_results2$V1)] <- 0
 dlist <- list(
   n_obs = nrow(act_results2),
   y_obs = act_results2$V1*10,
-  x = standardize(act_results2$opuntia_total_cover),
+  opuntia = standardize(act_results2$opuntia_total_cover),
+  surveys = standardize(sitedays$Days),
+  d_water = standardize(act_results2$dist_river),
+  d_road = standardize(act_results2$dist_road),
+  livestock = standardize(act_results2$livestock_proportion),
+  grass = standardize(act_results2$grass_total),
+  forb = standardize(act_results2$forb_total),
+  shrub = standardize(act_results2$shrub_total),
+  succulent = standardize(act_results2$succulent_total),
+  tree = standardize(act_results2$n_trees),
   dmat = dmat
 )
 
-m_test <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/hurdle_test/hurdle_test_v10.stan",
+m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/hurdle_test/hurdle_total_novegpath.stan",
                 data = dlist,
                 chains = 4, 
                 cores = 4,
                 warmup = 2000,
                 iter = 3000)
-dashboard(m_test)
-precis(m_test)
-par(mfrow=c(1,1)); plot(precis(m_test))
-post <- extract.samples(m_test)
+dashboard(m1)
+precis(m1)
+par(mfrow=c(1,1)); plot(precis(m1))
+post <- extract.samples(m1)
+
+# Load saved posterior distributions
+setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data/activity_analysis_output")
+post <- get(load("baboon_hurdle_total_novegpath.Rdata"))
+post <- get(load("elephant_hurdle_total_novegpath.Rdata"))
+post <- get(load("vervetmonkey_hurdle_total_novegpath.Rdata"))
+post <- get(load("zebragrevys_hurdle_total_novegpath.Rdata"))
+post <- get(load("impala_hurdle_total_novegpath.Rdata"))
+post <- get(load("giraffe_hurdle_total_novegpath.Rdata"))
+post <- get(load("hyenaspotted_hurdle_total_novegpath.Rdata"))
+
+par(mfrow=c(2,4))
+pr <- par()
+tiff("hurdle_plots_test.tiff", width = 15.83, height = 8.46, units = 'cm', res = 300)
+par(pr)
 
 
-
-#act_results2$opuntia_total_FOV <- act_results2$Opuntia_other_FOV + act_results2$Opuntia_stricta_FOV
-act_results3 <- act_results2[order(act_results2$total_ripe),]
-act_results3 <- act_results2[order(act_results2$opuntia_total_cover),]
-act_results3 <- act_results3 %>% filter(!is.na(total_ripe))
-
-
-plot(NULL, 
-     xlim=c(0,nrow(act_results3)), 
-     ylim=c(0, max(act_results3$V4 + 0.05)), 
-     xaxt = "n",
-     xlab = "",
-     ylab = "Activity",
-     main = "Elephant")
-axis(1, 
-     at = 1:nrow(act_results3),
-     labels = act_results3$site_list, 
-     las = 2)
-points(act_results3$V1, pch = 16)
-for(i in 1:nrow(act_results3)){
-  lines(x = rep(i, 2),
-        y = c(act_results3$V1[i]+act_results3$V2[i], act_results3$V1[i]-act_results3$V2[i]))
+x_seq <- seq(min(dlist$opuntia), max(dlist$opuntia), by = 0.01)
+y_sim <- matrix(NA, nrow = length(x_seq), ncol=length(post$beta_opuntia))
+for(i in 1:length(x_seq)){
+  y_sim[i,] <- rbinom(n = length(post$beta_opuntia), 
+                      size = 1,
+                      prob = 1 - (inv_logit(post$omega_bar + post$gamma_opuntia*x_seq[i])))*rlnorm(n = length(post$beta_opuntia), 
+                      meanlog = post$k_bar + post$beta_opuntia*x_seq[i], 
+                      sdlog = post$sigma)
 }
-abline(h=0, lty=2)
 
+y_sim_mu <- apply(y_sim, 1, mean)
+y_sim_mu2 <- apply(y_sim, 1, median)
+y_sim_ci <- apply(y_sim, 1, HPDI, prob = 0.95)
+y_sim_ci2 <- apply(y_sim, 1, HPDI, prob = 0.89)
+y_sim_ci3 <- apply(y_sim, 1, HPDI, prob = 0.90)
+y_sim_ci4 <- apply(y_sim, 1, HPDI, prob = 0.80)
+y_sim_ci5 <- apply(y_sim, 1, HPDI, prob = 0.70)
+y_sim_ci6 <- apply(y_sim, 1, HPDI, prob = 0.60)
+y_sim_ci7 <- apply(y_sim, 1, HPDI, prob = 0.50)
+
+plot( NULL , xlim=range(x_seq) , ylim=c(0,max(dlist$y_obs+1)) , 
+      xlab="Opuntia % cover (standardised)" , 
+      ylab="Activity (rescaled)", 
+      main = "")
+title("G)", adj=0, line = 0.7)
+#lines(x_seq, y_sim_mu, lwd=2, lty=2)
+lines(x_seq, y_sim_mu2, lwd=2, lty=1)
+colval <- "#35B779FF"
+alphaval <- 0.4
+shade(y_sim_ci, x_seq, col = col.alpha(colval,alphaval))
+shade(y_sim_ci2, x_seq, col = col.alpha(colval,alphaval))
+shade(y_sim_ci3, x_seq, col = col.alpha(colval,alphaval))
+shade(y_sim_ci4, x_seq, col = col.alpha(colval,alphaval))
+shade(y_sim_ci5, x_seq, col = col.alpha(colval,alphaval))
+shade(y_sim_ci6, x_seq, col = col.alpha(colval,alphaval))
+shade(y_sim_ci7, x_seq, col = col.alpha(colval,alphaval))
+points(x = dlist$opuntia, y = dlist$y_obs, pch = 16)
+
+
+
+
+# Hurdle model plots for all species in a loop ####
+# Species names
+key_sp <- c("baboon",
+            "elephant",
+            "vervetmonkey",
+            "zebragrevys",
+            "impala",
+            "giraffe",
+            "hyenaspotted")
+
+plot_titles <- c("A)", "B)", "C)", "D)", "E)", "F)", "G)")
+
+# Colours for shading CI's for each species
+#species_colours <- viridis(7)
+species_colours <- rep("#35B779FF", 7)
+colouralpha <- 0.4
+
+# Open new graphics device to save as TIFF
+par(mfrow=c(2,4))
+pr <- par()
+tiff("hurdle_plots_test2.tiff", width = 15.83, height = 8.46, units = 'cm', res = 300)
+par(pr)
+
+# Plot loop
+for(sp in 1:length(key_sp)){
+  
+  act_results <- results_list[key_sp[sp]]
+  act_results <- as.data.frame(act_results)
+  colnames(act_results) <- c("V1","V2","V3","V4")
+  act_results <- cbind(site_list, act_results)
+  
+  act_results$Site_ID <- as.numeric(gsub("Site_", "", act_results$site_list))
+  act_results2 <- merge(act_results, site_data, by="Site_ID", all.y = TRUE)
+  
+  act_results2$V1[is.na(act_results2$V1)] <- 0
+  
+  dlist <- list(
+    n_obs = nrow(act_results2),
+    y_obs = act_results2$V1*10,
+    opuntia = standardize(act_results2$opuntia_total_cover),
+    surveys = standardize(sitedays$Days),
+    d_water = standardize(act_results2$dist_river),
+    d_road = standardize(act_results2$dist_road),
+    livestock = standardize(act_results2$livestock_proportion),
+    grass = standardize(act_results2$grass_total),
+    forb = standardize(act_results2$forb_total),
+    shrub = standardize(act_results2$shrub_total),
+    succulent = standardize(act_results2$succulent_total),
+    tree = standardize(act_results2$n_trees),
+    dmat = dmat
+  )
+  
+  post <- get(load(paste0(key_sp[sp],"_hurdle_total_novegpath.Rdata")))
+  
+  x_seq <- seq(min(dlist$opuntia), max(dlist$opuntia), by = 0.01)
+  y_sim <- matrix(NA, nrow = length(x_seq), ncol=length(post$beta_opuntia))
+  for(i in 1:length(x_seq)){
+    y_sim[i,] <- rbinom(n = length(post$beta_opuntia), 
+                        size = 1,
+                        prob = 1 - (inv_logit(post$omega_bar + post$gamma_opuntia*x_seq[i])))*rlnorm(n = length(post$beta_opuntia), 
+                                                                                                     meanlog = post$k_bar + post$beta_opuntia*x_seq[i], 
+                                                                                                     sdlog = post$sigma)
+  }
+  
+  y_sim_mu <- apply(y_sim, 1, mean)
+  y_sim_mu2 <- apply(y_sim, 1, median)
+  y_sim_ci <- apply(y_sim, 1, HPDI, prob = 0.95)
+  y_sim_ci2 <- apply(y_sim, 1, HPDI, prob = 0.89)
+  y_sim_ci3 <- apply(y_sim, 1, HPDI, prob = 0.90)
+  y_sim_ci4 <- apply(y_sim, 1, HPDI, prob = 0.80)
+  y_sim_ci5 <- apply(y_sim, 1, HPDI, prob = 0.70)
+  y_sim_ci6 <- apply(y_sim, 1, HPDI, prob = 0.60)
+  y_sim_ci7 <- apply(y_sim, 1, HPDI, prob = 0.50)
+  
+  plot( NULL , xlim=range(x_seq) , ylim=c(0,max(dlist$y_obs+1)) , 
+        xlab="Opuntia" , 
+        ylab="Activity (rescaled)", 
+        main = "")
+  title(paste(plot_titles[sp]), adj=0, line = 0.7)
+  #lines(x_seq, y_sim_mu, lwd=2, lty=2)
+  shade(y_sim_ci, x_seq, col = col.alpha(species_colours[sp],colouralpha))
+  shade(y_sim_ci2, x_seq, col = col.alpha(species_colours[sp],colouralpha))
+  shade(y_sim_ci3, x_seq, col = col.alpha(species_colours[sp],colouralpha))
+  shade(y_sim_ci4, x_seq, col = col.alpha(species_colours[sp],colouralpha))
+  shade(y_sim_ci5, x_seq, col = col.alpha(species_colours[sp],colouralpha))
+  shade(y_sim_ci6, x_seq, col = col.alpha(species_colours[sp],colouralpha))
+  shade(y_sim_ci7, x_seq, col = col.alpha(species_colours[sp],colouralpha))
+  lines(x_seq, y_sim_mu2, lwd=2, lty=1)
+  points(x = dlist$opuntia, y = dlist$y_obs, pch = 16)
+}
+dev.off()
