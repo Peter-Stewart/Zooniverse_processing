@@ -2,6 +2,7 @@
 library(dplyr)
 library(tidyr)
 library(lubridate)
+library(jsonlite)
 
 # Source helper functions ####
 source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
@@ -13,6 +14,11 @@ workflows <- read.csv("prickly-pear-project-kenya-workflows.csv", header = TRUE)
 subjects <- read.csv("prickly-pear-project-kenya-subjects.csv")
 subjects <- subjects %>% filter(subject_set_id == 99701 | subject_set_id == 105787)
 #classifications <- read.csv("prickly-pear-project-kenya-classifications.csv", header = TRUE)
+
+setwd("C:/temp/Zooniverse/Talk_exports/2022_02_09")
+comments <- fromJSON("project-15807-comments_2023-02-09.json")
+comments$board_title <- as.factor(comments$board_title)
+comments <- comments %>% filter(board_title == "Notes")
 
 setwd("C:/temp/Zooniverse/Sep22/extracted")
 survey_extractions <- read.csv("survey_extractor_extractions.csv")
@@ -332,12 +338,12 @@ user_classifications$gold <- ifelse(user_classifications$user_name %in% expert_u
 
 expert_verified <- user_classifications %>% filter(gold == 1)
 
-# Separate the classifications made by the rest of the volunteers
-user_classifications <- user_classifications %>% filter(subject_id %notin% expert_verified$subject_id)
-
 # Validation set with expert vs. volunteer classifications on same images
 validation_set <- user_classifications %>% filter(subject_id %in% expert_verified$subject_id)
 validation_set <- rbind(validation_set, expert_verified)
+
+# Separate the classifications made by the rest of the volunteers
+user_classifications <- user_classifications %>% filter(subject_id %notin% expert_verified$subject_id)
 
 # Calculate number of votes for each species in each subject
 sp_votes <- user_classifications %>% group_by(subject_id) %>% count(species, name = "votes") 
@@ -405,7 +411,14 @@ user_classifications <- user_classifications %>% filter(DateTimeLub %within% dry
 
 # Generate list of images where volunteers ID "interaction with cactus" ####
 
-interactions_threshold <- 8 # Theshold for number of votes to appear in final list
+interactions_threshold <- 4 # Theshold for number of votes to appear in final list
+
+# List of key words to search for in comments
+key_words <- c("interact",
+               "eating",
+               "fruit",
+               "feed",
+               "forag")
 
 # Number of times each image has been classified as containing interaction with cactus 
 interactions <- user_classifications %>% filter(interacting == 1) %>% 
@@ -414,9 +427,22 @@ interactions <- user_classifications %>% filter(interacting == 1) %>%
   select(-interacting)
 interactions <- as.data.frame(interactions)
 
+match_ids <- unique (grep(paste(key_words,collapse="|"), 
+                          comments$comment_body, value=FALSE))
+
+matches <- comments[match_ids,]
+
+match_subjects <- matches$discussion_title
+match_subjects <- gsub("Subject ","",match_subjects)
+match_subjects <- as.data.frame(match_subjects)
+colnames(match_subjects) <- "subject_id"
+
+
 # Filter and merge with subject data
 interactions <- interactions %>% filter(votes >= interactions_threshold)
 interactions <- merge(interactions, subjects_sub, all.x =  TRUE)
+interactions2 <- merge(match_subjects, subjects_sub, all.x = TRUE)
+interactions2 <- interactions2 %>% filter(!is.na(metadata)) # Remove images with no metadata, i.e. from Oct/Nov
 
 # Generate list
 interactions_filelist <- interactions
@@ -430,8 +456,22 @@ interactions_filelist$path <- ifelse(grepl("RCNX", interactions_filelist$path, f
                                      paste0(interactions_filelist$path, ".jpg"))
 interactions_filelist <- interactions_filelist %>% select(path)
 
+interactions2_filelist <- interactions2
+interactions2_filelist$subfolder <- gsub("_IMG.*","",interactions2_filelist$File)
+interactions2_filelist$subfolder <- gsub("_RCNX.*","",interactions2_filelist$subfolder)
+interactions2_filelist$path <- paste0(interactions2_filelist$site,"/",
+                                      interactions2_filelist$subfolder,"/",
+                                      interactions2_filelist$File)
+interactions2_filelist$path <- ifelse(grepl("RCNX", interactions2_filelist$path, fixed = TRUE) == TRUE,
+                                      paste0(interactions2_filelist$path, ".JPG"),
+                                      paste0(interactions2_filelist$path, ".jpg"))
+interactions2_filelist <- interactions2_filelist %>% select(path)
+
+interactions_filelist <- rbind(interactions_filelist, interactions2_filelist)
+interactions_filelist <- unique(interactions_filelist)
+
 # Save the list
-#setwd("C:/temp/Zooniverse/June22")
+#setwd("C:/temp/Zooniverse/Oct22")
 #write.table(interactions_filelist, file = "interactions_filelist.txt",
 #            sep = "\t", col.names = FALSE, row.names = FALSE)
 
