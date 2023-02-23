@@ -20,7 +20,7 @@ comments <- fromJSON("project-15807-comments_2023-02-09.json")
 comments$board_title <- as.factor(comments$board_title)
 comments <- comments %>% filter(board_title == "Notes")
 
-setwd("C:/temp/Zooniverse/Sep22/extracted")
+setwd("C:/temp/Zooniverse/Oct22/extracted")
 survey_extractions <- read.csv("survey_extractor_extractions.csv")
 
 # Process survey extractions ####
@@ -94,26 +94,26 @@ fix <- merge(missingIDs, manifest, by="File")
 
 # Finally, reconstruct metadata from the information in the manifest
 fix$metadata <- paste('{\"Date\":\"',
-                  fix$Date,
-                  '\",\"File\":\"',
-                  fix$File,
-                  '\",\"Time\":\"',
-                  fix$Time,
-                  '\",\"#Empty\":\"FALSE\",\"Folder\":\"', # All are Empty == FALSE so just paste in directly
-                  fix$Folder,
-                  '\",\"#Animal\":\"TRUE\",\"#Person\":\"FALSE\",\"#DeleteFlag\":\"FALSE\",\"#ImageQuality\":\"Ok\",\"#RelativePath\":\"\"}' # These are the same for all images so just paste in directly
-                  )
+                      fix$Date,
+                      '\",\"File\":\"',
+                      fix$File,
+                      '\",\"Time\":\"',
+                      fix$Time,
+                      '\",\"#Empty\":\"FALSE\",\"Folder\":\"', # All are Empty == FALSE so just paste in directly
+                      fix$Folder,
+                      '\",\"#Animal\":\"TRUE\",\"#Person\":\"FALSE\",\"#DeleteFlag\":\"FALSE\",\"#ImageQuality\":\"Ok\",\"#RelativePath\":\"\"}' # These are the same for all images so just paste in directly
+)
 fix$metadata <- gsub(" ","",fix$metadata) # Remove spaces in the metadata
 
 # Merge the corrected metadata into the user_classifications dataframe
 user_classifications$metadata <- ifelse(user_classifications$subject_id %in% fix$subject_id,
-                                         fix$metadata,
-                                         user_classifications$metadata)
+                                        fix$metadata,
+                                        user_classifications$metadata)
 
 # Also merge into the subjects_sub data frame
 subjects_sub$metadata <- ifelse(subjects_sub$subject_id %in% fix$subject_id,
-                                        fix$metadata,
-                                        subjects_sub$metadata)
+                                fix$metadata,
+                                subjects_sub$metadata)
 
 
 # Split metadata into separate columns, drop non-useful info. Retain original metadata column too.
@@ -213,7 +213,7 @@ subjects_sub <- subjects_sub %>% unite(DateTimeNum, c("DateNum", "TimeNum"), sep
 subjects_sub$DateTimeLub <- as_datetime(subjects_sub$DateTimeNum)
 
 
-# Date and time tixes ####
+# Date and time fixes ####
 # Dates/times are wrong for three sites where camera 15 was deployed, due to a fault with the camera
 # Correct these using offset calculated from known deployment time
 
@@ -498,7 +498,7 @@ sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 #sites_k <- startends %>% select(Site, Deploy_date_lub, Days) %>% 
 #  filter(!is.na(Days)) %>%
 #  uncount(Days)
-  
+
 
 # Create (binary) detection matrix for each species 
 sp_list <- unique(levels(consensus_classifications$species))
