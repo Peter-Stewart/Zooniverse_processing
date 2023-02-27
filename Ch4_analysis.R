@@ -1,10 +1,13 @@
-# Load packages
+# Load packages ####
 library(MASS)
 library(dplyr)
 library(tidyr)
 library(lubridate)
+library(bipartite)
 library(rethinking)
 library(stringr)
+library(forcats)
+library(viridis)
 
 # Load data ####
 # Opuntia data from camera trap deployments
@@ -284,6 +287,7 @@ missing_sp_ids <- missing_sp_ids %>% separate(Notes, into = c("species", "Type")
   select(File, species)
 colnames(missing_sp_ids) <- c("File", "species_id")
 
+interactions_X <- interactions_X %>% filter(species != "noanimalspresent")
 interactions_Y <- merge(interactions_X, missing_sp_ids, by = "File", all.x = TRUE)
 
 interactions_Y <- interactions_Y %>% mutate(species = coalesce(species, species_id))
@@ -291,15 +295,182 @@ interactions_Y <- interactions_Y %>% mutate(species = coalesce(species, species_
 # Deal with cases where other animals are in background
 # Currently there are none of these which have not been dealt with using the "notes" field
 
-
-# Remove interactions which are "unsure" or type "none"
-interactions_sub <- interactions %>% filter(Confidence != "Unsure") %>%
-                                  filter(Type != "None")
-
-interactions_sub2 <- interactions_sub %>% select(-Date, -Time)
-
-
-
-# Make sure that all interactions have a species assigned
-
 # Create variable for the species of Opuntia that is present at each site
+opuntia_sp <- opuntia_data1 %>% select(Site_ID, Species) %>% distinct()
+
+# For cases where multiple sp. or no sp. (because cactus is >10m away) check camera images
+opuntia_sp <- opuntia_sp %>% filter(!is.na(Species)) %>% 
+  filter(Species != "ficus_indica") %>% 
+  filter(Site_ID %notin% c(66,96,98))
+
+setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+opuntia_sp_manual <- read.csv("opuntia_site_sp.csv", header = TRUE)
+opuntia_sp <- opuntia_sp %>% filter(Site_ID %notin% opuntia_sp_manual$Site_ID)
+opuntia_sp <- rbind(opuntia_sp, opuntia_sp_manual)
+colnames(opuntia_sp) <- c("Site_ID", "opuntia_sp")
+
+interactions_Z <- merge(interactions_Y, opuntia_sp, by.x = "site", by.y = "Site_ID", all.x = TRUE)
+interactions <- interactions_Z
+
+# Clean up interaction type variable
+interactions$Type <- fct_recode(interactions$Type, Eating_fruit = "Eating fruit")
+interactions$Type <- fct_recode(interactions$Type, Eating_fruit = "eatingfrui")
+interactions$Type <- fct_recode(interactions$Type, Eating_fruit = "eatingfruit")
+
+interactions$Type <- fct_recode(interactions$Type, Eating_pads_or_roots = "Eating pads/roots")
+interactions$Type <- fct_recode(interactions$Type, Eating_pads_or_roots = "eatingpadsroots")
+
+interactions$Type <- fct_recode(interactions$Type, Eating_other_vegetation = "Eating other vegetation")
+interactions$Type <- fct_recode(interactions$Type, Eating_other_vegetation = "eatingothervegetation")
+
+interactions$Type <- fct_recode(interactions$Type, Hiding_under_cactus = "Hiding under cactus")
+interactions$Type <- fct_recode(interactions$Type, Hiding_under_cactus = "hidingundercactus")
+
+interactions$Type <- fct_recode(interactions$Type, Eating_flowers = "eatingflower")
+
+interactions$Type <- fct_recode(interactions$Type, Perching_on_cactus = "perching")
+
+# Create variable which separates interaction type by Opuntia species
+interactions$Type_opuntia_sp <- paste0(interactions$opuntia_sp,"_",interactions$Type)
+
+# Keep only unique interaction classifications for each interaction ID
+interactions_unique <- interactions %>% select(Interaction_ID, 
+                                               species, 
+                                               Type, 
+                                               opuntia_sp, 
+                                               Type_opuntia_sp)
+
+interactions_unique <- unique(interactions_unique)
+
+engelmannii_unique <- interactions_unique %>% filter(opuntia_sp == "engelmannii")
+stricta_unique <- interactions_unique %>% filter(opuntia_sp == "stricta")
+
+# Create interaction matrices
+interaction_matrix <- as.matrix(table(interactions$Type_opuntia_sp, interactions$species))
+
+interaction_matrix_unique <- as.matrix(table(interactions_unique$Type_opuntia_sp, interactions_unique$species))
+
+engelmannii_matrix_unique <- as.matrix(table(engelmannii_unique$Type, engelmannii_unique$species))
+stricta_matrix_unique <- as.matrix(table(stricta_unique$Type, stricta_unique$species))
+
+sp_labs <- c("Olive baboon",
+             "Bird (other)",
+             "Buffalo",
+             "Camel",
+             "Dikdik",
+             "Elephant",
+             "Vulturine guineafowl",
+             "Hippo",
+             "Impala",
+             "Livestock",
+             "Oryx",
+             "Squirrel",
+             "Vervet monkey",
+             "Warthog",
+             "Grevy's zebra",
+             "Plains zebra")
+
+int_labs <- c("Eating flowers e",
+              "Eating fruit e",
+              "Eating other veg. e",
+              "Hiding under cactus e",
+              "Perching e",
+              "Eating fruit s",
+              "Eating other veg. s",
+              "Eating pads/roots s",
+              "Hiding under cactus s",
+              "Perching s")
+
+sp_labs_eng <- c("Olive baboon",
+             "Bird (other)",
+             "Buffalo",
+             "Camel",
+             "Dikdik",
+             "Elephant",
+             "Vulturine guineafowl",
+             "Impala",
+             "Livestock",
+             "Oryx",
+             "Squirrel",
+             "Vervet monkey",
+             "Warthog",
+             "Grevy's zebra",
+             "Plains zebra")
+
+sp_labs_str <- c("Olive baboon",
+                 "Bird (other)",
+                 "Buffalo",
+                 "Dikdik",
+                 "Elephant",
+                 "Hippo",
+                 "Impala",
+                 "Livestock",
+                 "Vervet monkey")
+
+int_labs_eng <- c("Eating fruit",
+                  "Eating other veg.",
+                  "Eating pads/roots",
+                  "Eating flowers",
+                  "Hiding under cactus",
+                  "Perching")
+
+int_labs_str <- int_labs_eng
+
+colnames(interaction_matrix) <- sp_labs
+rownames(interaction_matrix) <- int_labs
+
+colnames(interaction_matrix_unique) <- sp_labs
+rownames(interaction_matrix_unique) <- int_labs
+
+colnames(engelmannii_matrix_unique) <- sp_labs_eng
+rownames(engelmannii_matrix_unique) <- int_labs_eng
+
+colnames(stricta_matrix_unique) <- sp_labs_str
+rownames(stricta_matrix_unique) <- int_labs_str
+
+# Plot bipartite network
+pal1 <- viridis(length(unique(interactions$species)))
+x1 <- ifelse(sp_labs %in% sp_labs_eng,1,0)
+x2 <- ifelse(sp_labs %in% sp_labs_str,1,0)
+
+pal1a <- pal1[which(x1==1)]
+pal1b <- pal1[which(x2==1)]
+
+pal2 <- c(rep("#05520d", 5),
+          rep("#03a81f", 5))
+pal3 <- rep("#05520d", 5)
+pal4 <- rep("#03a81f", 5)
+
+llength <- str_length(int_labs) - 2L
+
+plotweb(interaction_matrix,
+              method = "normal",
+              text.rot = 0,
+              col.high = pal1,
+              col.interaction = pal1,
+              col.low = pal2,
+              low.lablength = llength)
+
+plotweb(interaction_matrix_unique,
+        method = "normal",
+        text.rot = 0,
+        col.high = pal1,
+        col.interaction = pal1,
+        col.low = pal2,
+        low.lablength = llength)
+
+par(mfrow=c(1,2))
+plotweb(engelmannii_matrix_unique,
+        method = "normal",
+        text.rot = 0,
+        col.high = pal1a,
+        col.interaction = pal1a,
+        col.low = pal3)
+
+plotweb(stricta_matrix_unique,
+        method = "normal",
+        text.rot = 0,
+        col.high = pal1b,
+        col.interaction = pal1b,
+        col.low = pal4)
+par(mfrow=c(1,1))
