@@ -27,7 +27,7 @@ model{
   
   // Likelihood
   for(i in 1:N){
-    lambda[i] = exp(alpha_bar + z[site[i]]*sigma_fruit + beta_height*height[i] + beta_cochineal*cochineal[i]);
+    lambda[i] = exp(alpha_bar + z[site[i]]*sigma+ beta_height*height[i] + beta_cochineal*cochineal[i]);
   }
   fruit ~ neg_binomial_2(lambda, phi);
 }
