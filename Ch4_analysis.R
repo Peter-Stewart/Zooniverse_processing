@@ -338,12 +338,13 @@ names(effects_list_main) <- c("engelmannii_bin",
                               "stricta_neg_bin")
 
 # Size vs fruit figures
-tiff("height_fruit_main.tiff", width = 15.82, height = 7.5, units = 'cm', res = 300)
+#tiff("height_fruit_main.tiff", width = 15.82, height = 7.5, units = 'cm', res = 300)
+tiff("height_fruit_main.tiff", width = 23, height = 7.5, units = 'cm', res = 300)
 col_pal <- viridis(9)
 col_alpha <- 0.3
-ln <- 2.5 # For adjusting axis positions
+ln <- 2 # For adjusting axis positions
 par(mfrow=c(1,2),
-    mar = c(2.6, 3, 2.1, 3) + 1,
+    mar = c(2.6, 3, 2.1, 3) + 0.75,
     cex = 0.83)
 
 df <- engelmannii
@@ -398,7 +399,7 @@ axis(side = 1, at = c(-1,0,1,2), labels = round(c(mean(df$Max_height)-sd(df$Max_
                                                   mean(df$Max_height),
                                                   mean(df$Max_height)+sd(df$Max_height),
                                                   mean(df$Max_height)+2*sd(df$Max_height)), 
-                                                digits = 1))
+                                                digits = 0))
 axis(side = 2, at = c(0, round(max(df$Ripe_fruits), digits = -1)/2, round(max(df$Ripe_fruits), digits = -1)), labels = c(0,0.5,1), padj = 0)
 mtext("Probability of producing fruit", side = 2, line = ln)    
 
@@ -476,7 +477,7 @@ axis(side = 1, at = c(-1,0,1,2), labels = round(c(mean(df$Max_height)-sd(df$Max_
                                                   mean(df$Max_height),
                                                   mean(df$Max_height)+sd(df$Max_height),
                                                   mean(df$Max_height)+2*sd(df$Max_height)), 
-                                                digits = 1))
+                                                digits = 0))
 axis(side = 2, at = c(0, round(max(df$Ripe_fruits), digits = -1)/2, round(max(df$Ripe_fruits), digits = -1)), labels = c(0,0.5,1))
 mtext("Probability of producing fruit", side = 2, line = ln)    
 
