@@ -364,4 +364,41 @@ for(j in 1:4){
 }
 
 
+# Hurdle model ####
+N <- 1e4
+
+alpha <- rnorm(N, 0, 0.4)
+beta <- rnorm(N, 0, 0.4)
+sigma <- rexp(N, 5)
+
+x_seq <- seq(-2, 2, by = 0.01)
+
+y_sim <- matrix(NA, nrow = length(x_seq), ncol=N)
+for(i in 1:length(x_seq)){
+  y_sim[i,] <- rlnorm(n = N, 
+                      meanlog = alpha + beta*x_seq[i], 
+                      sdlog = sigma)
+}
+
+y_sim_mu <- apply(y_sim, 1, median)
+y_sim_mu2 <- apply(y_sim, 1, mean)
+y_sim_ci <- apply(y_sim, 1, HPDI, prob = 0.95)
+y_sim_ci2 <- apply(y_sim, 1, HPDI, prob = 0.89)
+y_sim_ci3 <- apply(y_sim, 1, HPDI, prob = 0.90)
+y_sim_ci4 <- apply(y_sim, 1, HPDI, prob = 0.80)
+y_sim_ci5 <- apply(y_sim, 1, HPDI, prob = 0.70)
+y_sim_ci6 <- apply(y_sim, 1, HPDI, prob = 0.60)
+y_sim_ci7 <- apply(y_sim, 1, HPDI, prob = 0.50)
+
+plot( NULL , xlim=c(-2,2) , ylim=c(0,5) , xlab="x" , ylab="y", main = expression(alpha *" ~ Normal(0, 0.4),  " * beta * " ~ Normal(0, 0.4), " * sigma * " ~ Exponential(5)"))
+abline(v=0, lty=2)
+lines(x_seq, y_sim_mu, lwd=2)
+lines(x_seq, y_sim_mu2, lwd=2, lty=2)
+shade(y_sim_ci, x_seq)
+shade(y_sim_ci2, x_seq)
+shade(y_sim_ci3, x_seq)
+shade(y_sim_ci4, x_seq)
+shade(y_sim_ci5, x_seq)
+shade(y_sim_ci6, x_seq)
+shade(y_sim_ci7, x_seq)
 
