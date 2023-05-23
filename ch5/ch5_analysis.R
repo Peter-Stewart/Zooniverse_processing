@@ -250,11 +250,13 @@ names(effects_list_main) <- c("engelmannii_bin",
                               "stricta_neg_bin")
 
 # Size vs fruit figures for main text ####
-#tiff("height_fruit_main.tiff", width = 15.82, height = 7.5, units = 'cm', res = 300)
 tiff("height_fruit_main.tiff", width = 23, height = 7.5, units = 'cm', res = 300)
 col_pal <- viridis(9)
 col_alpha <- 0.3
 ln <- 2 # For adjusting axis positions
+ind_engel <- c(1,2,2,1) # Indices for alpha parameters for engelmannii
+ind_str <- c(1,2,2,1) # Indices for alpha parameters for stricta
+
 par(mfrow=c(1,2),
     mar = c(2.6, 3, 2.1, 3) + 0.75,
     cex = 0.83)
@@ -275,7 +277,12 @@ xseq <- seq(min(dlist$height), max(dlist$height), by = 0.05)
 
 theta <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
 for(i in 1:length(xseq)){
-  theta[,i] <- inv_logit(post$alpha_fruit_bar + post$beta_height_fruit*xseq[i])
+  theta[,i] <- inv_logit(post$alpha_fruit_bar + 
+                           post$beta_height_fruit*xseq[i] +
+                           post$alpha_tree_fruit[,ind_engel[1]] +
+                           post$alpha_grass_fruit[,ind_engel[2]] +
+                           post$alpha_forb_fruit[,ind_engel[3]] +
+                           post$alpha_shrub_fruit[,ind_engel[4]])
 }
 theta_mu <- apply(theta, 2, median)
 theta_pi95 <- apply(theta, 2, HPDI, prob = 0.95)
@@ -288,7 +295,12 @@ theta_pi50 <- apply(theta, 2, HPDI, prob = 0.50)
 post <- effects_list_main$engelmannii_neg_bin
 lambda <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
 for(i in 1:length(xseq)){
-  lambda[,i] <- exp(post$alpha_fruit_bar + post$beta_height_fruit*xseq[i])
+  lambda[,i] <- exp(post$alpha_fruit_bar + 
+                      post$beta_height_fruit*xseq[i] +
+                      post$alpha_tree_fruit[,ind_engel[1]] +
+                      post$alpha_grass_fruit[,ind_engel[2]] +
+                      post$alpha_forb_fruit[,ind_engel[3]] +
+                      post$alpha_shrub_fruit[,ind_engel[4]])
 }
 
 lambda_mu <- apply(lambda, 2, median)
@@ -352,7 +364,12 @@ xseq <- seq(min(dlist$height), max(dlist$height), by = 0.05)
 
 theta <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
 for(i in 1:length(xseq)){
-  theta[,i] <- inv_logit(post$alpha_fruit_bar + post$beta_height_fruit*xseq[i])
+  theta[,i] <- inv_logit(post$alpha_fruit_bar + 
+                           post$beta_height_fruit*xseq[i] +
+                           post$alpha_tree_fruit[,ind_str[1]] +
+                           post$alpha_grass_fruit[,ind_str[2]] +
+                           post$alpha_forb_fruit[,ind_str[3]] +
+                           post$alpha_shrub_fruit[,ind_str[4]])
 }
 theta_mu <- apply(theta, 2, median)
 theta_pi95 <- apply(theta, 2, HPDI, prob = 0.95)
@@ -365,7 +382,12 @@ theta_pi50 <- apply(theta, 2, HPDI, prob = 0.50)
 post <- effects_list_main$stricta_neg_bin
 lambda <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
 for(i in 1:length(xseq)){
-  lambda[,i] <- exp(post$alpha_fruit_bar + post$beta_height_fruit*xseq[i])
+  lambda[,i] <- exp(post$alpha_fruit_bar + 
+                      post$beta_height_fruit*xseq[i] +
+                      post$alpha_tree_fruit[,ind_str[1]] +
+                      post$alpha_grass_fruit[,ind_str[2]] +
+                      post$alpha_forb_fruit[,ind_str[3]] +
+                      post$alpha_shrub_fruit[,ind_str[4]])
 }
 
 lambda_mu <- apply(lambda, 2, median)
@@ -420,6 +442,9 @@ tiff("height_fruit_sup.tiff", width = 23, height = 7.5, units = 'cm', res = 300)
 col_pal <- viridis(9)
 col_alpha <- 0.3
 ln <- 2 # For adjusting axis positions
+ind_engel <- c(1,2,2,1) # Indices for alpha parameters for engelmannii
+ind_str <- c(1,2,2,1) # Indices for alpha parameters for stricta
+
 par(mfrow=c(1,2),
     mar = c(2.6, 3, 2.1, 3) + 0.75,
     cex = 0.83)
@@ -440,7 +465,12 @@ xseq <- seq(min(dlist$height), max(dlist$height), by = 0.05)
 
 theta <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
 for(i in 1:length(xseq)){
-  theta[,i] <- inv_logit(post$alpha_fruit_bar + post$beta_height_fruit*xseq[i])
+  theta[,i] <- inv_logit(post$alpha_fruit_bar + 
+                           post$beta_height_fruit*xseq[i] +
+                           post$alpha_tree_fruit[,ind_engel[1]] +
+                           post$alpha_grass_fruit[,ind_engel[2]] +
+                           post$alpha_forb_fruit[,ind_engel[3]] +
+                           post$alpha_shrub_fruit[,ind_engel[4]])
 }
 theta_mu <- apply(theta, 2, median)
 theta_pi95 <- apply(theta, 2, HPDI, prob = 0.95)
@@ -453,7 +483,12 @@ theta_pi50 <- apply(theta, 2, HPDI, prob = 0.50)
 post <- effects_list_sup$engelmannii_neg_bin
 lambda <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
 for(i in 1:length(xseq)){
-  lambda[,i] <- exp(post$alpha_fruit_bar + post$beta_height_fruit*xseq[i])
+  lambda[,i] <- exp(post$alpha_fruit_bar + 
+                      post$beta_height_fruit*xseq[i] +
+                      post$alpha_tree_fruit[,ind_engel[1]] +
+                      post$alpha_grass_fruit[,ind_engel[2]] +
+                      post$alpha_forb_fruit[,ind_engel[3]] +
+                      post$alpha_shrub_fruit[,ind_engel[4]])
 }
 
 lambda_mu <- apply(lambda, 2, median)
@@ -517,7 +552,12 @@ xseq <- seq(min(dlist$height), max(dlist$height), by = 0.05)
 
 theta <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
 for(i in 1:length(xseq)){
-  theta[,i] <- inv_logit(post$alpha_fruit_bar + post$beta_height_fruit*xseq[i])
+  theta[,i] <- inv_logit(post$alpha_fruit_bar + 
+                           post$beta_height_fruit*xseq[i] +
+                           post$alpha_tree_fruit[,ind_str[1]] +
+                           post$alpha_grass_fruit[,ind_str[2]] +
+                           post$alpha_forb_fruit[,ind_str[3]] +
+                           post$alpha_shrub_fruit[,ind_str[4]])
 }
 theta_mu <- apply(theta, 2, median)
 theta_pi95 <- apply(theta, 2, HPDI, prob = 0.95)
@@ -530,7 +570,12 @@ theta_pi50 <- apply(theta, 2, HPDI, prob = 0.50)
 post <- effects_list_sup$stricta_neg_bin
 lambda <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
 for(i in 1:length(xseq)){
-  lambda[,i] <- exp(post$alpha_fruit_bar + post$beta_height_fruit*xseq[i])
+  lambda[,i] <- exp(post$alpha_fruit_bar + 
+                      post$beta_height_fruit*xseq[i] +
+                      post$alpha_tree_fruit[,ind_str[1]] +
+                      post$alpha_grass_fruit[,ind_str[2]] +
+                      post$alpha_forb_fruit[,ind_str[3]] +
+                      post$alpha_shrub_fruit[,ind_str[4]])
 }
 
 lambda_mu <- apply(lambda, 2, median)
@@ -725,195 +770,6 @@ for(i in 1:11){
 }
 dev.off()
 par(pr)
-
-# Version including alpha parameters for trees, grasses, forbs, shrubs
-tiff("height_fruit_main_alphas.tiff", width = 23, height = 7.5, units = 'cm', res = 300)
-col_pal <- viridis(9)
-col_alpha <- 0.3
-ln <- 2 # For adjusting axis positions
-ind_engel <- c(1,2,2,1) # Indices for alpha parameters for engelmannii
-ind_str <- c(1,2,2,1) # Indices for alpha parameters for stricta
-
-par(mfrow=c(1,2),
-    mar = c(2.6, 3, 2.1, 3) + 0.75,
-    cex = 0.83)
-
-df <- engelmannii
-post <- effects_list_main$engelmannii_bin
-dlist <- list(N = as.integer(nrow(df)),
-              site = as.integer(as.factor(as.character(df$Site_ID))),
-              n_sites = as.integer(length(unique(df$Site_ID))),
-              fruit = as.integer(df$Ripe_fruits),
-              height = standardize(as.numeric(df$Max_height)),
-              cochineal = standardize(as.numeric(df$Cochineal_.)),
-              tree = as.integer(df$Under_tree),
-              grass = df$Grass + 1L,
-              forb = df$Forb + 1L,
-              shrub = df$Shrub + 1L)
-xseq <- seq(min(dlist$height), max(dlist$height), by = 0.05)
-
-theta <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
-for(i in 1:length(xseq)){
-  theta[,i] <- inv_logit(post$alpha_fruit_bar + 
-                           post$beta_height_fruit*xseq[i] +
-                           post$alpha_tree_fruit[,ind_engel[1]] +
-                           post$alpha_grass_fruit[,ind_engel[2]] +
-                           post$alpha_forb_fruit[,ind_engel[3]] +
-                           post$alpha_shrub_fruit[,ind_engel[4]])
-}
-theta_mu <- apply(theta, 2, median)
-theta_pi95 <- apply(theta, 2, HPDI, prob = 0.95)
-theta_pi89 <- apply(theta, 2, HPDI, prob = 0.89)
-theta_pi80 <- apply(theta, 2, HPDI, prob = 0.80)
-theta_pi70 <- apply(theta, 2, HPDI, prob = 0.70)
-theta_pi60 <- apply(theta, 2, HPDI, prob = 0.60)
-theta_pi50 <- apply(theta, 2, HPDI, prob = 0.50)
-
-post <- effects_list_main$engelmannii_neg_bin
-lambda <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
-for(i in 1:length(xseq)){
-  lambda[,i] <- exp(post$alpha_fruit_bar + 
-                      post$beta_height_fruit*xseq[i] +
-                      post$alpha_tree_fruit[,ind_engel[1]] +
-                      post$alpha_grass_fruit[,ind_engel[2]] +
-                      post$alpha_forb_fruit[,ind_engel[3]] +
-                      post$alpha_shrub_fruit[,ind_engel[4]])
-}
-
-lambda_mu <- apply(lambda, 2, median)
-lambda_pi95 <- apply(lambda, 2, HPDI, prob = 0.95)
-lambda_pi89 <- apply(lambda, 2, HPDI, prob = 0.89)
-lambda_pi80 <- apply(lambda, 2, HPDI, prob = 0.80)
-lambda_pi70 <- apply(lambda, 2, HPDI, prob = 0.70)
-lambda_pi60 <- apply(lambda, 2, HPDI, prob = 0.60)
-lambda_pi50 <- apply(lambda, 2, HPDI, prob = 0.50)
-
-plot(NULL, xlim = range(xseq), 
-     ylim=c(0,round(max(df$Ripe_fruits), digits = -1)), xlab="", 
-     ylab="", 
-     #main = substitute(paste(italic("O. engelmannii"))),
-     xaxt = "n", yaxt = "n")
-title("C)", adj=0, line = 0.7)
-
-mtext("Max. height (cm)", side = 1, line = ln)
-axis(side = 1, at = c(-1,0,1,2), labels = round(c(mean(df$Max_height)-sd(df$Max_height),
-                                                  mean(df$Max_height),
-                                                  mean(df$Max_height)+sd(df$Max_height),
-                                                  mean(df$Max_height)+2*sd(df$Max_height)), 
-                                                digits = 0))
-axis(side = 2, at = c(0, round(max(df$Ripe_fruits), digits = -1)/2, round(max(df$Ripe_fruits), digits = -1)), labels = c(0,0.5,1), padj = 0)
-mtext("Probability of producing fruit", side = 2, line = ln)    
-
-axis(side = 4, at = c(0, round(max(df$Ripe_fruits), digits = -1)/2, round(max(df$Ripe_fruits), digits = -1)), labels = c(0,round(max(df$Ripe_fruits), digits = -1)/2, round(max(df$Ripe_fruits), digits = -1)), padj = 0)
-mtext("Number of fruits", side = 4, line = ln) 
-
-shade(lambda_pi95, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi89, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi80, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi70, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi60, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi50, xseq, col = col.alpha(col_pal[2], col_alpha))
-points(x = xseq, y = lambda_mu, type = "l", lwd = 2)
-
-shade(theta_pi95*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi89*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi80*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi70*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi60*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi50*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-points(x = xseq, y = theta_mu*round(max(df$Ripe_fruits), digits = -1), type = "l", lty = 2, lwd = 2)
-
-points(x = dlist$height, y = dlist$fruit, pch=16)
-
-df <- stricta
-post <- effects_list_main$stricta_bin
-dlist <- list(N = as.integer(nrow(df)),
-              site = as.integer(as.factor(as.character(df$Site_ID))),
-              n_sites = as.integer(length(unique(df$Site_ID))),
-              fruit = as.integer(df$Ripe_fruits),
-              height = standardize(as.numeric(df$Max_height)),
-              cochineal = standardize(as.numeric(df$Cochineal_.)),
-              tree = as.integer(df$Under_tree),
-              grass = df$Grass + 1L,
-              forb = df$Forb + 1L,
-              shrub = df$Shrub + 1L)
-xseq <- seq(min(dlist$height), max(dlist$height), by = 0.05)
-
-theta <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
-for(i in 1:length(xseq)){
-  theta[,i] <- inv_logit(post$alpha_fruit_bar + 
-                           post$beta_height_fruit*xseq[i] +
-                           post$alpha_tree_fruit[,ind_str[1]] +
-                           post$alpha_grass_fruit[,ind_str[2]] +
-                           post$alpha_forb_fruit[,ind_str[3]] +
-                           post$alpha_shrub_fruit[,ind_str[4]])
-}
-theta_mu <- apply(theta, 2, median)
-theta_pi95 <- apply(theta, 2, HPDI, prob = 0.95)
-theta_pi89 <- apply(theta, 2, HPDI, prob = 0.89)
-theta_pi80 <- apply(theta, 2, HPDI, prob = 0.80)
-theta_pi70 <- apply(theta, 2, HPDI, prob = 0.70)
-theta_pi60 <- apply(theta, 2, HPDI, prob = 0.60)
-theta_pi50 <- apply(theta, 2, HPDI, prob = 0.50)
-
-post <- effects_list_main$stricta_neg_bin
-lambda <- matrix(nrow=length(post$alpha_fruit_bar), ncol = length(xseq))
-for(i in 1:length(xseq)){
-  lambda[,i] <- exp(post$alpha_fruit_bar + 
-                      post$beta_height_fruit*xseq[i] +
-                      post$alpha_tree_fruit[,ind_str[1]] +
-                      post$alpha_grass_fruit[,ind_str[2]] +
-                      post$alpha_forb_fruit[,ind_str[3]] +
-                      post$alpha_shrub_fruit[,ind_str[4]])
-}
-
-lambda_mu <- apply(lambda, 2, median)
-lambda_pi95 <- apply(lambda, 2, HPDI, prob = 0.95)
-lambda_pi89 <- apply(lambda, 2, HPDI, prob = 0.89)
-lambda_pi80 <- apply(lambda, 2, HPDI, prob = 0.80)
-lambda_pi70 <- apply(lambda, 2, HPDI, prob = 0.70)
-lambda_pi60 <- apply(lambda, 2, HPDI, prob = 0.60)
-lambda_pi50 <- apply(lambda, 2, HPDI, prob = 0.50)
-
-
-plot(NULL, xlim = range(xseq), 
-     ylim=c(0,round(max(df$Ripe_fruits), digits = -1)), xlab="", 
-     ylab="", 
-     #main = substitute(paste(italic("O. stricta"))),
-     xaxt = "n", yaxt = "n")
-title("D)", adj=0, line = 0.7)
-
-mtext("Max. height (cm)", side = 1, line = ln)
-axis(side = 1, at = c(-1,0,1,2), labels = round(c(mean(df$Max_height)-sd(df$Max_height),
-                                                  mean(df$Max_height),
-                                                  mean(df$Max_height)+sd(df$Max_height),
-                                                  mean(df$Max_height)+2*sd(df$Max_height)), 
-                                                digits = 0))
-axis(side = 2, at = c(0, round(max(df$Ripe_fruits), digits = -1)/2, round(max(df$Ripe_fruits), digits = -1)), labels = c(0,0.5,1))
-mtext("Probability of producing fruit", side = 2, line = ln)    
-
-axis(side = 4, at = c(0, round(max(df$Ripe_fruits), digits = -1)/2, round(max(df$Ripe_fruits), digits = -1)), labels = c(0,round(max(df$Ripe_fruits), digits = -1)/2, round(max(df$Ripe_fruits), digits = -1)))
-mtext("Number of fruits", side = 4, line = ln) 
-
-shade(lambda_pi95, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi89, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi80, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi70, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi60, xseq, col = col.alpha(col_pal[2], col_alpha))
-shade(lambda_pi50, xseq, col = col.alpha(col_pal[2], col_alpha))
-points(x = xseq, y = lambda_mu, type = "l", lwd = 2)
-
-shade(theta_pi95*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi89*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi80*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi70*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi60*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-shade(theta_pi50*round(max(df$Ripe_fruits), digits = -1), xseq, col = col.alpha(col_pal[6], col_alpha))
-points(x = xseq, y = theta_mu*round(max(df$Ripe_fruits), digits = -1), type = "l", lty = 2, lwd = 2)
-
-points(x = dlist$height, y = dlist$fruit, pch=16)
-dev.off()
-
 
 # Effect sizes figure for supplementary material ####
 effects_list_sup <- list(post3, post4, post7, post8)
@@ -1433,6 +1289,9 @@ interactions_unique <- unique(interactions_unique)
 engelmannii_unique <- interactions_unique %>% filter(opuntia_sp == "engelmannii")
 stricta_unique <- interactions_unique %>% filter(opuntia_sp == "stricta")
 
+engelmannii_interactions <- interactions %>% filter(opuntia_sp == "engelmannii")
+stricta_interactions <- interactions %>% filter(opuntia_sp == "stricta")
+
 # Create interaction matrices
 interaction_matrix <- as.matrix(table(interactions$Type_opuntia_sp, interactions$species))
 
@@ -1440,6 +1299,9 @@ interaction_matrix_unique <- as.matrix(table(interactions_unique$Type_opuntia_sp
 
 engelmannii_matrix_unique <- as.matrix(table(engelmannii_unique$Type, engelmannii_unique$species))
 stricta_matrix_unique <- as.matrix(table(stricta_unique$Type, stricta_unique$species))
+
+engelmannii_matrix <- as.matrix(table(engelmannii_interactions$Type, engelmannii_interactions$species))
+stricta_matrix <- as.matrix(table(stricta_interactions$Type, stricta_interactions$species))
 
 sp_labs <- c("Olive baboon",
              "Bird (other)",
@@ -1512,11 +1374,16 @@ rownames(interaction_matrix_unique) <- int_labs
 
 colnames(engelmannii_matrix_unique) <- sp_labs_eng
 rownames(engelmannii_matrix_unique) <- int_labs_eng
-
 colnames(stricta_matrix_unique) <- sp_labs_str
 rownames(stricta_matrix_unique) <- int_labs_str
 
-# Plot bipartite network
+colnames(engelmannii_matrix) <- sp_labs_eng
+rownames(engelmannii_matrix) <- int_labs_eng
+colnames(stricta_matrix) <- sp_labs_str
+rownames(stricta_matrix) <- int_labs_str
+
+# Plot bipartite networks ####
+# Define colour palettes and label lengths
 pal1 <- viridis(length(unique(interactions$species)))
 x1 <- ifelse(sp_labs %in% sp_labs_eng,1,0)
 x2 <- ifelse(sp_labs %in% sp_labs_str,1,0)
@@ -1531,13 +1398,15 @@ pal4 <- rep("#03a81f", 5)
 
 llength <- str_length(int_labs) - 2L
 
+# Make plots
 plotweb(interaction_matrix,
               method = "normal",
               text.rot = 0,
               col.high = pal1,
               col.interaction = pal1,
               col.low = pal2,
-              low.lablength = llength)
+              low.lablength = llength, 
+              labsize = 1.2)
 
 plotweb(interaction_matrix_unique,
         method = "normal",
@@ -1547,42 +1416,91 @@ plotweb(interaction_matrix_unique,
         col.low = pal2,
         low.lablength = llength)
 
-par(mfrow=c(1,2))
+par(mfrow=c(1,1))
+tiff("interaction_network_v1.tiff", width = 23, height = 12, units = 'cm', res = 300)
+par(mfrow=c(1,2),
+    mar = c(5,1,5,1)+0.1)
 plotweb(engelmannii_matrix_unique,
         method = "normal",
         text.rot = 0,
         col.high = pal1a,
         col.interaction = pal1a,
-        col.low = pal3)
+        col.low = pal3, 
+        labsize = 1.2,
+        #adj.high = c(0,0),
+        #adj.low = c(1,1)
+        )
 
 plotweb(stricta_matrix_unique,
         method = "normal",
         text.rot = 0,
         col.high = pal1b,
         col.interaction = pal1b,
-        col.low = pal4)
+        col.low = pal4,
+        labsize = 1.2)
+dev.off()
 par(mfrow=c(1,1))
 
-# Calculate interaction metrics 
-# Species level
-specieslevel(interaction_matrix_unique)
+plotweb(engelmannii_matrix,
+        method = "normal",
+        text.rot = 0,
+        col.high = pal1a,
+        col.interaction = pal1a,
+        col.low = pal3, 
+        labsize = 1.2,
+        #adj.high = c(0,0),
+        #adj.low = c(1,1)
+)
 
-# Network level
-metrics <- c("links per species",
-             "number of compartments",
+plotweb(stricta_matrix,
+        method = "normal",
+        text.rot = 0,
+        col.high = pal1b,
+        col.interaction = pal1b,
+        col.low = pal4,
+        labsize = 1.2)
+
+
+# Calculate interaction metrics 
+# Metrics to examine
+# Species-level
+metrics_s <- c("degree",
+              "species strength",
+              "d")
+
+# Group-level
+metrics_g <- c()
+
+# Network-level
+metrics_n <- c("number of compartments",
              "cluster coefficient",
              "weighted NODF",
-             "linkage density",
              "Shannon diversity",
              "H2")
 
-#networklevel(interaction_matrix_unique, index = metrics)
-n1 <- networklevel(engelmannii_matrix_unique, index = metrics)
-n2 <- networklevel(stricta_matrix_unique, index = metrics)
+s0 <- specieslevel(interaction_matrix_unique, index = metrics_s)
+s1 <- specieslevel(engelmannii_matrix_unique, index = metrics_s)
+s2 <- specieslevel(stricta_matrix_unique, index = metrics_s)
+
+#g0 <- grouplevel(interaction_matrix_unique, index = metrics_g)
+#g1 <- grouplevel(engelmannii_matrix_unique, index = metrics_g)
+#g2 <- grouplevel(stricta_matrix_unique, index = metrics_g)
+
+n0 <- networklevel(interaction_matrix_unique, index = metrics_n)
+n1 <- networklevel(engelmannii_matrix_unique, index = metrics_n)
+n2 <- networklevel(stricta_matrix_unique, index = metrics_n)
 
 
+# Alternative plot as matrix
+colpal1 <- viridis(16, direction = -1)
+colpal1[1] <- "#ffffff"
 
-#
-visweb(interaction_matrix_unique)
-visweb(engelmannii_matrix_unique)
-visweb(stricta_matrix_unique)
+colpal2 <- viridis(13, direction = -1)
+colpal2[1] <- "#ffffff"
+
+colpal3 <- viridis(9, direction = -1)
+colpal3[1] <- "#ffffff"
+
+visweb(interaction_matrix_unique, type = "diagonal", def.col = colpal1, square = "defined")
+visweb(engelmannii_matrix_unique, type = "diagonal", def.col = colpal2, square = "defined")
+visweb(stricta_matrix_unique, type = "diagonal", def.col = colpal3, square = "defined")
