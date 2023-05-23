@@ -1,3 +1,4 @@
+# Function to generate detection matrix where columns are days ####
 generate_detection_matrix_days <- function(sp, binary = FALSE, sites_as_integers = TRUE){
   
   # Check if consensus classifications dataframe exists, stop and warn if not
