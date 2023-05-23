@@ -8,7 +8,7 @@ library(activity)
 library(lubridate)
 
 # Source helper functions ####
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
+source("C:/Zooniverse_processing/helper_functions.R", echo = FALSE)
 
 # Load data ####
 setwd("C:/temp/Zooniverse/Feb23/processed")
@@ -19,7 +19,7 @@ sitedays <- get(load("sitedays.Rdata"))
 sitedays <- sitedays %>% group_by(Site) %>% summarise(Days = sum(Days)) # Group by site to get total days
 validation_set <- get(load("validation_set.Rdata"))
 
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/PhD Data")
 site_data <- read.csv("Cameras_site_data_main.csv", header = TRUE)
 site_data <- site_data %>% filter(Site_ID %in% sitedays$Site) # Remove the two vandalised sites
 
@@ -33,11 +33,11 @@ df_mu_f <- get(load("grid_square_fruiting.Rdata"))
 df_mu_n <- get(load("grid_square_non_fruiting.Rdata"))
 df_mu_t <- get(load("grid_square_total.Rdata"))
 
-setwd("C:/GIS_temp/Ch3_spatial_analysis/Fieldseason1/Outputs")
+setwd("C:/GIS_temp/Ch4_spatial_analysis/Fieldseason1/Outputs")
 dist_river <- read.csv("distance_to_river.csv", header = TRUE)
 dist_road <- read.csv("distance_to_road.csv", header = TRUE)
 
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/PhD Data")
 weather <- read.csv("Mpala_weather.csv")
 weather <- weather %>% separate(TIMESTAMP, into = c("Date", "Time"), sep = " ", remove = FALSE, convert = FALSE)
 
@@ -150,8 +150,7 @@ site_data <- site_data[order(site_data$Site_ID),]
 dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
 
 # Occupancy models - fine-scale #### 
-#setwd("C:/temp/ch3_post")
-setwd("E:/ch3_post_new/fine_scale")
+setwd("E:/ch4_post_new/fine_scale")
 
 key_sp <- c("baboon",
             "elephant",
@@ -188,7 +187,7 @@ options(warn = -1)
 # loop through all key species, run model, save results and diagnostics
 for(m in 1:length(model_list)){
   
-  setwd(paste0("E:/ch3_post_new/fine_scale/",model_list[m]))
+  setwd(paste0("E:/ch4_post_new/fine_scale/",model_list[m]))
   
   for(sp in 1:length(key_sp)){
     
@@ -227,7 +226,7 @@ for(m in 1:length(model_list)){
     )
     
     # Run the model
-    m1_nc <- cstan(file = paste0("C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/",model_list[m],".stan"),
+    m1_nc <- cstan(file = paste0("C:/Zooniverse_processing/models/ch4/",model_list[m],".stan"),
                    data = dlist,
                    chains = n_chains,
                    cores = n_cores,
@@ -284,7 +283,7 @@ for(m in 1:length(model_list)){
 options(warn = oldw)
 
 # Occupancy models - broad-scale ####
-setwd("E:/ch3_post_new/grid_square")
+setwd("E:/ch4_post_new/grid_square")
 
 key_sp <- c("baboon",
             "elephant",
@@ -337,7 +336,7 @@ options(warn = -1)
 # loop through all key species, run model, save results and diagnostics
 for(m in 1:length(model_list)){
   
-  setwd(paste0("E:/ch3_post_new/grid_square/",model_list[m]))
+  setwd(paste0("E:/ch4_post_new/grid_square/",model_list[m]))
   
   
   for(sp in 1:length(key_sp)){
@@ -378,7 +377,7 @@ for(m in 1:length(model_list)){
     )
     
     # Run the model
-    m1_nc <- cstan(file = paste0("C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/",model_list[m],".stan"),
+    m1_nc <- cstan(file = paste0("C:/Zooniverse_processing/ch4/",model_list[m],".stan"),
                    data = dlist,
                    chains = n_chains,
                    cores = n_cores,
@@ -436,7 +435,7 @@ options(warn = oldw)
 
 # Marginal effect plots - fine-scale ####
 # Total effects without vegetation pathway ####
-setwd("E:/ch3_post_new/fine_scale/total_effect_no_veg_path")
+setwd("E:/ch4_post_new/fine_scale/total_effect_no_veg_path")
 post_total_no_veg_path_baboon <- get(load("baboon_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
 post_total_no_veg_path_elephant <- get(load("elephant_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
 post_total_no_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
@@ -508,7 +507,7 @@ rm(df_total_no_veg_path_zebragrevys)
 gc()
 
 # Total effects with vegetation pathway ####
-setwd("E:/ch3_post_new/fine_scale/total_effect_veg_path")
+setwd("E:/ch4_post_new/fine_scale/total_effect_veg_path")
 post_total_veg_path_baboon <- get(load("baboon_total_effect_veg_path_post.Rdata")); rm(post); gc()
 post_total_veg_path_elephant <- get(load("elephant_total_effect_veg_path_post.Rdata")); rm(post); gc()
 post_total_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_veg_path_post.Rdata")); rm(post); gc()
@@ -611,10 +610,10 @@ species_colours <- rep("#35B779FF", 8)
 colouralpha <- 0.4
 
 # Open new graphics device to save as TIFF
-setwd("E:/ch3_post_new")
+setwd("E:/ch4_post_new")
 #par(mfrow=c(2,4), mgp = c(1.5, 0.5, 0), mar = c(2.5, 2.5, 2, 1.5) + 0.1, tck = -0.02)
 #pr <- par()
-pr <- get(load("C:/Users/PeteS/OneDrive/Durham/Occupancy chapter/good_plot_par.Rdata")) # Good settings for 8-panel plots
+pr <- get(load("C:/Zooniverse_processing/Occupancy chapter/good_plot_par.Rdata")) # Good settings for 8-panel plots
 
 tiff("fine_scale_total_vegpath.tiff", width = 15.83, height = 8.46, units = 'cm', res = 300)
 par(pr)
@@ -688,7 +687,7 @@ dev.off() # Close graphics device
 
 # Marginal effect plots - broad-scale ####
 # Total effects without vegetation pathway ####
-setwd("E:/ch3_post_new/grid_square/total_effect_no_veg_path")
+setwd("E:/ch4_post_new/grid_square/total_effect_no_veg_path")
 post_total_no_veg_path_baboon <- get(load("baboon_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
 post_total_no_veg_path_elephant <- get(load("elephant_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
 post_total_no_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_no_veg_path_post.Rdata")); rm(post); gc()
@@ -760,7 +759,7 @@ rm(df_total_no_veg_path_zebragrevys)
 gc()
 
 # Total effects with vegetation pathway ####
-setwd("E:/ch3_post_new/grid_square/total_effect_veg_path")
+setwd("E:/ch4_post_new/grid_square/total_effect_veg_path")
 post_total_veg_path_baboon <- get(load("baboon_total_effect_veg_path_post.Rdata")); rm(post); gc()
 post_total_veg_path_elephant <- get(load("elephant_total_effect_veg_path_post.Rdata")); rm(post); gc()
 post_total_veg_path_vervetmonkey <- get(load("vervetmonkey_total_effect_veg_path_post.Rdata")); rm(post); gc()
@@ -865,8 +864,8 @@ colouralpha <- 0.4
 # Open new graphics device to save as TIFF
 #par(mfrow=c(2,4))
 #pr <- par()
-pr <- get(load("C:/Users/PeteS/OneDrive/Durham/Occupancy chapter/good_plot_par.Rdata")) # Good settings for 8-panel plots
-setwd("E:/ch3_post_new")
+pr <- get(load("C:/Zooniverse_processing/good_plot_par.Rdata")) # Good settings for 8-panel plots
+setwd("E:/ch4_post_new")
 tiff("grid_square_total_vegpath.tiff", width = 15.83, height = 8.46, units = 'cm', res = 300)
 par(pr)
 
@@ -1113,7 +1112,7 @@ m16 <- fitact(dat = t_rad2,
               show = TRUE)
 
 # Save results
-setwd("E:/ch3_post_new/activity_analysis/activity_analysis_output")
+setwd("E:/ch4_post_new/activity_analysis/activity_analysis_output")
 save(m1, file = "baboon_high.Rdata")
 save(m2, file = "baboon_low.Rdata")
 save(m3, file = "elephant_high.Rdata")
@@ -1132,7 +1131,7 @@ save(m15, file = "dikdik_high.Rdata")
 save(m16, file = "dikdik_low.Rdata")
 
 # Loading saved data 
-setwd("E:/ch3_post_new/activity_analysis/activity_analysis_output")
+setwd("E:/ch4_post_new/activity_analysis/activity_analysis_output")
 m1 <- get(load("baboon_high.Rdata"))
 m2 <- get(load("baboon_low.Rdata"))
 m3 <- get(load("elephant_high.Rdata"))
@@ -1153,12 +1152,12 @@ m16 <- get(load("dikdik_low.Rdata"))
 # Activity plots for each species
 #par(mfrow=c(2,4))
 #pr <- par()
-pr <- get(load("C:/Users/PeteS/OneDrive/Durham/Occupancy chapter/good_plot_par.Rdata")) # Good settings for 8-panel plots
+pr <- get(load("C:/Zooniverse_processing/good_plot_par.Rdata")) # Good settings for 8-panel plots
 col_high <- "#440154FF"
 col_low <- "#4AC16DFF"
 col_alpha <- 0.5
 
-setwd("E:/ch3_post_new/activity_analysis/activity_analysis_output")
+setwd("E:/ch4_post_new/activity_analysis/activity_analysis_output")
 tiff("activity_plots_new.tiff", width = 15.83, height = 8.46, units = 'cm', res = 300)
 par(pr)
 # Baboon
@@ -1291,11 +1290,11 @@ for(s in 1:length(key_sp)){
 names(results_list) <- key_sp
 
 # Save activity results for each site
-setwd("E:/ch3_post_new/activity_analysis/activity_analysis_output")
+setwd("E:/ch4_post_new/activity_analysis/activity_analysis_output")
 save(results_list, file = "activity_sitelevel_all.Rdata")
 
 # Load activity results for each site
-setwd("E:/ch3_post_new/activity_analysis/activity_analysis_output")
+setwd("E:/ch4_post_new/activity_analysis/activity_analysis_output")
 results_list <- get(load("activity_sitelevel_all.Rdata"))
 
 # Parameters for running model
@@ -1318,7 +1317,7 @@ n_iter <- 4000 # Total number of iterations (warmup + sample) per chain
 dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
 
 for(m in 1:length(model_list)){
-  setwd(paste0("E:/ch3_post_new/activity_analysis/activity_analysis_output/fine_scale/",model_list[m]))
+  setwd(paste0("E:/ch4_post_new/activity_analysis/activity_analysis_output/fine_scale/",model_list[m]))
   for(sp in 1:length(key_sp)){
     act_results <- results_list[key_sp[sp]]
     act_results <- as.data.frame(act_results)
@@ -1345,7 +1344,7 @@ for(m in 1:length(model_list)){
       tree = standardize(act_results2$n_trees),
       dmat = dmat)
     
-    m1 <- cstan(file = paste0("C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/hurdle_test/hurdle_",model_list[m],".stan"),
+    m1 <- cstan(file = paste0("C:/Zooniverse_processing/models/ch4/hurdle_",model_list[m],".stan"),
                 data = dlist,
                 chains = n_chains, 
                 cores = n_cores,
@@ -1405,7 +1404,7 @@ sitedays_grid <- sitedays %>% filter(Site %in% grid_data$Site_ID)
 dmat <- generate_distance_matrix(grid_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
 
 for(m in 1:length(model_list)){
-  setwd(paste0("E:/ch3_post_new/activity_analysis/activity_analysis_output/grid_square/",model_list[m]))
+  setwd(paste0("E:/ch4_post_new/activity_analysis/activity_analysis_output/grid_square/",model_list[m]))
   for(sp in 1:length(key_sp)){
     act_results <- results_list[key_sp[sp]]
     act_results <- as.data.frame(act_results)
@@ -1435,7 +1434,7 @@ for(m in 1:length(model_list)){
       tree = standardize(act_results2$n_trees),
       dmat = dmat)
     
-    m1 <- cstan(file = paste0("C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/hurdle_test/hurdle_",model_list[m],".stan"),
+    m1 <- cstan(file = paste0("C:/Zooniverse_processing/models/hurdle_",model_list[m],".stan"),
                 data = dlist,
                 chains = n_chains, 
                 cores = n_cores,
@@ -1511,7 +1510,7 @@ colouralpha <- 0.4
 #pr <- par()
 
 # Fine scale
-setwd("E:/ch3_post_new/activity_analysis/activity_analysis_output/fine_scale/total_novegpath")
+setwd("E:/ch4_post_new/activity_analysis/activity_analysis_output/fine_scale/total_novegpath")
 tiff("hurdle_plots_fine_scale_novegpath.tiff", width = 15.83, height = 8.46, units = 'cm', res = 300)
 par(pr)
 
@@ -1586,7 +1585,7 @@ dev.off() # Close graphics device
 
 # Grid square
 #pr <- par()
-setwd("E:/ch3_post_new/activity_analysis/activity_analysis_output/grid_square/total_novegpath")
+setwd("E:/ch4_post_new/activity_analysis/activity_analysis_output/grid_square/total_novegpath")
 tiff("hurdle_plots_grid_square_novegpath.tiff", width = 15.83, height = 8.46, units = 'cm', res = 300)
 par(pr)
 
@@ -1663,7 +1662,7 @@ for(sp in 1:length(key_sp)){
 dev.off() # Close graphics device
 
 # Plot posterior distributions of beta_opuntia and gamma_opuntia for each species ####
-setwd("E:/ch3_post_new/activity_analysis/activity_analysis_output/fine_scale/total_novegpath")
+setwd("E:/ch4_post_new/activity_analysis/activity_analysis_output/fine_scale/total_novegpath")
 
 species_names <- c("Olive baboon",
                    "Elephant",
