@@ -3,10 +3,10 @@ library(MASS)
 
 # Gaussian process parameters ####
 # Need to consider actual distances between sites in order to choose sensible priors
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/PhD Data")
 site_data <- read.csv("Cameras_site_data_main.csv", header = TRUE)
 site_data <- site_data %>% filter(Site_ID %in% sitedays$Site)
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v1.R", echo = FALSE)
+source("C:/Zooniverse_processing/helper_functions.R", echo = FALSE)
 dmat <- generate_distance_matrix(site_data, rescale = TRUE, rescale_constant = 6000, log = FALSE, jitter = FALSE)
 dists <- dmat[upper.tri(dmat, diag = TRUE)] # Only distances i -> j or i - > i, not j -> i
 
@@ -259,8 +259,6 @@ abline( h=0.5 , lty=2 ) # Add horizontal line at 0.5 detection probablity
 for ( i in 1:N ) curve(inv_logit( alpha3[i] + beta3[i]*(x)) ,
                        from=-2 , to=2 , add=TRUE ,
                        col=col.alpha("black",0.2) )
-
-
 
 
 # Changing alpha while holding beta constant
