@@ -400,10 +400,6 @@ consensus_classifications <- consensus_classifications %>% select(
 
 consensus_classifications <- rbind(consensus_classifications, expert_verified)
 
-############################################################################
-# AT THIS STAGE MERGE IN EXPERT CLASSIFICATIONS WHEN I MAKE THOSE EVENTUALLY
-############################################################################
-
 # Subset  classifications to dry season data only until Oct/Nov data have been completed on Zooniverse ####
 dry_season <- interval("2021-01-01", "2021-05-01")
 consensus_classifications <- consensus_classifications %>% filter(DateTimeLub %within% dry_season)
@@ -470,9 +466,11 @@ interactions2_filelist <- interactions2_filelist %>% select(path)
 interactions_filelist <- rbind(interactions_filelist, interactions2_filelist)
 interactions_filelist <- unique(interactions_filelist)
 
+interactions_filelist_old <- read.table("C:/temp/Zooniverse/Oct22/interactions_filelist.txt")
+
 # Save the list
 #setwd("C:/temp/Zooniverse/Oct22")
-#write.table(interactions_filelist, file = "interactions_filelist.txt",
+#write.table(interactions_filelist_update, file = "interactions_filelist_update.txt",
 #            sep = "\t", col.names = FALSE, row.names = FALSE)
 
 # Generate detection matrix for each species####
@@ -499,7 +497,6 @@ sitedays <- startends %>% select(Site, Days) %>% filter(!is.na(Days))
 #  filter(!is.na(Days)) %>%
 #  uncount(Days)
 
-
 # Create (binary) detection matrix for each species 
 sp_list <- unique(levels(consensus_classifications$species))
 
@@ -510,7 +507,7 @@ for(i in 1:length(sp_list)){
 names(detmats) <- sp_list
 
 # Save results ####
-setwd("C:/temp/Zooniverse/Oct22/processed")
+setwd("C:/temp/Zooniverse/Feb23/processed")
 
 save(consensus_classifications, file = "consensus_classifications.Rdata")
 save(detmats, file = "detmats.Rdata")
