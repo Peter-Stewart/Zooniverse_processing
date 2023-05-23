@@ -1,4 +1,4 @@
-# Function to make a nice clean plot of activity kernel
+# Function to make a nice clean plot of activity kernel ####
 clean_activity_plot <- function(mod, species_title = "", colour = "black", alpha = 0.2, add = FALSE, lwd = 1.7){
   if(add == FALSE){
     plot(NULL, 
@@ -15,4 +15,3 @@ clean_activity_plot <- function(mod, species_title = "", colour = "black", alpha
   points(x = mod@pdf[,1], y = mod@pdf[,2], type = "l", lwd=lwd)
   modci <- t(mod@pdf[,4:5])
   shade(modci, mod@pdf[,1], col=col.alpha(colour, alpha))
-}
