@@ -9,18 +9,18 @@ library(stringr)
 library(forcats)
 library(viridis)
 
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
+source("C:/Zooniverse_processing/helper_functions.R", echo = FALSE)
 
 # Load data ####
 # Opuntia data from camera trap deployments
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/PhD Data")
 opuntia_data1 <- read.csv("Cameras_opuntia_data_main.csv", header = TRUE)
 
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data/Sign_survey_data")
+setwd("C:/Zooniverse_processing/PhD Data/Sign_survey_data")
 opuntia_data2 <- read.csv("Sign_survey_opuntia_data_main.csv", header = TRUE)
 
 # Interaction data
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/PhD Data")
 interactions1 <- read.csv("Fieldseason1_interactions_results.csv", header = TRUE)
 interactions2 <- read.csv("Fieldseason2_interactions_results.csv", header = TRUE)
 
@@ -156,7 +156,7 @@ dlist <- list(N = as.integer(nrow(df)),
               forb = df$Forb + 1L,
               shrub = df$Shrub + 1L)
 
-m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/binomial.stan",
+m1 <- cstan(file = "C:/Zooniverse_processing/models/ch5/binomial.stan",
             data = dlist,
             chains = 4,
             cores = 4,
@@ -177,7 +177,7 @@ dlist <- list(N = as.integer(nrow(df)),
               forb = df$Forb + 1L,
               shrub = df$Shrub + 1L)
 
-m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/neg_bin.stan",
+m1 <- cstan(file = "C:/Zooniverse_processing/models/ch5/neg_bin.stan",
             data = dlist,
             chains = 4,
             cores = 4,
@@ -201,7 +201,7 @@ dlist <- list(N = as.integer(nrow(df)),
               forb = df$Forb + 1L,
               shrub = df$Shrub + 1L)
 
-m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/binomial_impute.stan",
+m1 <- cstan(file = "C:/Zooniverse_processing/models/ch5/binomial_impute.stan",
             data = dlist,
             chains = 4,
             cores = 4,
@@ -221,7 +221,7 @@ dlist <- list(N = as.integer(nrow(df)),
               forb = df$Forb + 1L,
               shrub = df$Shrub + 1L)
 
-m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/neg_bin_impute.stan",
+m1 <- cstan(file = "C:/Zooniverse_processing/models/ch5/neg_bin_impute.stan",
             data = dlist,
             chains = 4,
             cores = 4,
@@ -1224,7 +1224,7 @@ missing_sp_filelist <- missing_sp$path
 #write.table(missing_sp_filelist, file = "interactions_missing_sp_filelist.txt",
 #           sep = "\t", col.names = FALSE, row.names = FALSE)
 
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/PhD Data")
 missing_sp_ids <- read.csv("interactions_missing_sp.csv", header = TRUE)
 
 missing_sp_ids <- missing_sp_ids %>% separate(Notes, into = c("species", "Type"), sep = "-", remove = FALSE, convert = FALSE) %>%
@@ -1247,7 +1247,7 @@ opuntia_sp <- opuntia_sp %>% filter(!is.na(Species)) %>%
   filter(Species != "ficus_indica") %>% 
   filter(Site_ID %notin% c(66,96,98))
 
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/PhD Data")
 opuntia_sp_manual <- read.csv("opuntia_site_sp.csv", header = TRUE)
 opuntia_sp <- opuntia_sp %>% filter(Site_ID %notin% opuntia_sp_manual$Site_ID)
 opuntia_sp <- rbind(opuntia_sp, opuntia_sp_manual)
