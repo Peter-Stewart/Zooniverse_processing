@@ -6,14 +6,14 @@ library(tidyr)
 library(bayesplot)
 
 # Source helper functions ####
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
+source("C:/Zooniverse_processing/helper_functions.R", echo = FALSE)
 
 # Load real data so we can use the real distances between sites ####
 setwd("C:/temp/Zooniverse/Oct22/processed")
 sitedays <- get(load("sitedays.Rdata"))
 sitedays_aggregated <- sitedays %>% group_by(Site) %>% summarise(Days_total = sum(Days))
 
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/Durham/PhD Data")
 site_data <- read.csv("Cameras_site_data_main.csv", header = TRUE)
 site_data <- site_data %>% filter(Site_ID %in% sitedays$Site)
 
@@ -130,7 +130,7 @@ dlist <- list(
 )
 
 # Run model ####
-mtest <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/sim_test.stan",
+mtest <- cstan(file = "C:/Zooniverse_processing/models/ch4/sim_test.stan",
                data = dlist,
                chains = 4,
                cores = 4,
