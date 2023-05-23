@@ -125,7 +125,7 @@ dlist_f_l <- list(
   y = y_f_l,
   n_obs = n_obs_f_l
 )
-mod_f_l <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/distance_sampling/mbj_distance.stan",
+mod_f_l <- cstan(file = "C:/Zooniverse_processing/models/ch4/mbj_distance.stan",
                  data = dlist_f_l,
                  chains = 4, 
                  cores = 4,
@@ -141,7 +141,7 @@ dlist_n_l <- list(
   y = y_n_l,
   n_obs = n_obs_n_l
 )
-mod_n_l <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/distance_sampling/mbj_distance.stan",
+mod_n_l <- cstan(file = "C:/Zooniverse_processing/models/ch4/mbj_distance.stan",
                  data = dlist_n_l,
                  chains = 4, 
                  cores = 4,
@@ -157,7 +157,7 @@ dlist_f_m <- list(
   y = y_f_m,
   n_obs = n_obs_f_m
 )
-mod_f_m <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/distance_sampling/mbj_distance.stan",
+mod_f_m <- cstan(file = "C:/C:/Zooniverse_processing/models/ch4/mbj_distance.stan",
                  data = dlist_f_m,
                  chains = 4, 
                  cores = 4,
@@ -173,7 +173,7 @@ dlist_n_m <- list(
   y = y_n_m,
   n_obs = n_obs_n_m
 )
-mod_n_m <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/distance_sampling/mbj_distance.stan",
+mod_n_m <- cstan(file = "C:/Zooniverse_processing/models/ch4/mbj_distance.stan",
                  data = dlist_n_m,
                  chains = 4, 
                  cores = 4,
@@ -189,7 +189,7 @@ dlist_f_s <- list(
   y = y_f_s,
   n_obs = n_obs_f_s
 )
-mod_f_s <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/distance_sampling/mbj_distance.stan",
+mod_f_s <- cstan(file = "C:/Zooniverse_processing/models/ch4/mbj_distance.stan",
                  data = dlist_f_s,
                  chains = 4, 
                  cores = 4,
@@ -205,7 +205,7 @@ dlist_n_s <- list(
   y = y_n_s,
   n_obs = n_obs_n_s
 )
-mod_n_s <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/distance_sampling/mbj_distance.stan",
+mod_n_s <- cstan(file = "C:/Zooniverse_processing/models/ch4/mbj_distance.stan",
                  data = dlist_n_s,
                  chains = 4, 
                  cores = 4,
@@ -371,7 +371,7 @@ df_mu_t <- as.data.frame(cbind(rownames(y_n_s), mu_t))
 colnames(df_mu_t) <- c("grid_square", "grid_total_volume")
 df_mu_t$grid_square <- as.factor(df_mu_t$grid_square)
 
-setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+setwd("C:/Zooniverse_processing/PhD Data")
 save(df_mu_f, file = "grid_square_fruiting.Rdata")
 save(df_mu_n, file = "grid_square_non_fruiting.Rdata")
 save(df_mu_t, file = "grid_square_total.Rdata")
