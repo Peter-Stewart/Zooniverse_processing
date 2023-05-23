@@ -1,5 +1,4 @@
-# Generates detection matrix where the rows are site-days and the columns are hours
-
+# Generates detection matrix where the rows are site-days and the columns are hours ####
 generate_detection_matrix_hours <- function(sp, binary = FALSE){
   
   # Check if consensus classifications dataframe exists, stop and warn if not
