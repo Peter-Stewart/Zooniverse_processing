@@ -5,7 +5,7 @@ library(lubridate)
 library(jsonlite)
 
 # Source helper functions ####
-source("C:/Users/PeteS/OneDrive/R Scripts Library/Projects/Zooniverse/helper_functions_v2.R", echo = FALSE)
+source("C:/Zooniverse_processing/helper_functions.R", echo = FALSE)
 
 # Load data ####
 setwd("C:/temp/Zooniverse/Oct22")
