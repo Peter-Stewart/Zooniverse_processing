@@ -130,7 +130,7 @@ dlist <- list(
 )
 
 # Run model ####
-mtest <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/sim_test_v1.stan",
+mtest <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/occupancy_models/ch3/sim_test.stan",
                data = dlist,
                chains = 4,
                cores = 4,
