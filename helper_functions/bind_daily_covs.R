@@ -1,4 +1,4 @@
-# Function to take covariates defined on day/sub-day level (e.g., weather data) and arrange them into same format as detection matrix.
+# Function to take covariates defined on day/sub-day level (e.g., weather data) and arrange them into same format as detection matrix. ####
 bind_daily_covs <- function(startends, day_data, day_cov, summary_type = "mean", standardise = FALSE, standardize = FALSE, date_format = "ymd", sites_as_integers = TRUE){
   
   # Select date format (default is year-month-day)
