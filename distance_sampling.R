@@ -357,3 +357,21 @@ points(x=1:41, y=mu_t, pch=16)
 for(i in 1:41){
   lines(x = rep(i,2), y = c(pi89_t[2,i],pi89_t[1,i]))
 }
+
+# Get median densities as dataframes
+df_mu_f <- as.data.frame(cbind(rownames(y_n_s), mu_f))
+colnames(df_mu_f) <- c("grid_square", "grid_fruiting_volume")
+df_mu_f$grid_square <- as.factor(df_mu_f$grid_square)
+
+df_mu_n <- as.data.frame(cbind(rownames(y_n_s), mu_n))
+colnames(df_mu_n) <- c("grid_square", "grid_non_fruiting_volume")
+df_mu_n$grid_square <- as.factor(df_mu_n$grid_square)
+
+df_mu_t <- as.data.frame(cbind(rownames(y_n_s), mu_t))
+colnames(df_mu_t) <- c("grid_square", "grid_total_volume")
+df_mu_t$grid_square <- as.factor(df_mu_t$grid_square)
+
+setwd("C:/Users/PeteS/OneDrive/Durham/PhD Data")
+save(df_mu_f, file = "grid_square_fruiting.Rdata")
+save(df_mu_n, file = "grid_square_non_fruiting.Rdata")
+save(df_mu_t, file = "grid_square_total.Rdata")
