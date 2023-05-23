@@ -156,7 +156,7 @@ dlist <- list(N = as.integer(nrow(df)),
               forb = df$Forb + 1L,
               shrub = df$Shrub + 1L)
 
-m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/binomial_v3.stan",
+m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/binomial.stan",
             data = dlist,
             chains = 4,
             cores = 4,
@@ -177,7 +177,7 @@ dlist <- list(N = as.integer(nrow(df)),
               forb = df$Forb + 1L,
               shrub = df$Shrub + 1L)
 
-m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/neg_bin_varyingint_v3.stan",
+m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/neg_bin.stan",
             data = dlist,
             chains = 4,
             cores = 4,
@@ -201,7 +201,7 @@ dlist <- list(N = as.integer(nrow(df)),
               forb = df$Forb + 1L,
               shrub = df$Shrub + 1L)
 
-m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/binomial_impute_v1.stan",
+m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/binomial_impute.stan",
             data = dlist,
             chains = 4,
             cores = 4,
@@ -221,7 +221,7 @@ dlist <- list(N = as.integer(nrow(df)),
               forb = df$Forb + 1L,
               shrub = df$Shrub + 1L)
 
-m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/neg_bin_v7.stan",
+m1 <- cstan(file = "C:/Users/PeteS/OneDrive/R Scripts Library/Stan_code/fruit_analysis/neg_bin_impute.stan",
             data = dlist,
             chains = 4,
             cores = 4,
